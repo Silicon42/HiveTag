@@ -1,0 +1,21 @@
+<svg width="256" height="256" viewBox="-2 -2 4 4" xmlns="http://www.w3.org/2000/svg">
+	<circle r="2" fill="#000"/>
+	<polygon points="0,2 -1.73205081,-1 1.73205081,-1" fill="#FFF"/>
+	<defs>
+		<polygon id="H" points="0,2 -1.73205081,1 -1.73205081,-1 0,-2 1.73205081,-1 1.73205081,1" shape-rendering="geometricPrecision"/>
+	</defs>
+	<g transform="scale(0.200000)">
+		<use href="#H" fill="#FFF" y="-5" x="-1.73205081"/>
+		<use href="#H" fill="#000" y="-5" x="1.73205081"/>
+		<use href="#H" fill="#000" y="-2" x="0.00000000"/>
+		<use href="#H" fill="#FFF" y="-2" x="3.46410162"/>
+		<use href="#H" fill="#000" y="1" x="5.19615242"/>
+		<use href="#H" fill="#000" y="4" x="3.46410162"/>
+		<use href="#H" fill="#FFF" y="1" x="1.73205081"/>
+		<use href="#H" fill="#000" y="4" x="0.00000000"/>
+		<use href="#H" fill="#000" y="4" x="-3.46410162"/>
+		<use href="#H" fill="#000" y="1" x="-5.19615242"/>
+		<use href="#H" fill="#FFF" y="1" x="-1.73205081"/>
+		<use href="#H" fill="#FFF" y="-2" x="-3.46410162"/>
+	</g>
+</svg>
