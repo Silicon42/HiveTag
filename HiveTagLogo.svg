@@ -1,0 +1,26 @@
+<svg width="256" height="256" viewBox="-2 -2 4 4" xmlns="http://www.w3.org/2000/svg">
+	<mask id="tri">
+		<rect x="-2" y="-2" width="4" height="4" fill="#FFF"/>
+		<polygon points="0,2 -1.73205081,-1 1.73205081,-1"/>
+	</mask>
+	<circle r="2" mask="url(#tri)"/>
+	<defs>
+		<polygon id="hexagon" fill="orange" stroke="yellow" points="0,2 -1.73205081,1 -1.73205081,-1 0,-2 1.73205081,-1 1.73205081,1" shape-rendering="geometricPrecision"/>
+	</defs>
+	<g transform="scale(.2)">
+		<use href="#hexagon" y="-5" x="-1.73205081"/>
+		<use href="#hexagon" y="-5" x="1.73205081"/>
+		<use href="#hexagon" y="-2" x="0"/>
+		<use href="#hexagon" y="-2" x="3.46410162"/>
+
+		<use href="#hexagon" y="1" x="5.19615242"/>
+		<use href="#hexagon" y="4" x="3.46410162"/>
+		<use href="#hexagon" y="1" x="1.73205081"/>
+		<use href="#hexagon" y="4" x="0"/>
+
+		<use href="#hexagon" y="4" x="-3.46410162"/>
+		<use href="#hexagon" y="1" x="-5.19615242"/>
+		<use href="#hexagon" y="1" x="-1.73205081"/>
+		<use href="#hexagon" y="-2" x="-3.46410162"/>
+	</g>
+</svg>
