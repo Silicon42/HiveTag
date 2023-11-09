@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <stdio.h>
 #include "gf16.h"
 
 #define MARKER_SVG_HEADER "\
