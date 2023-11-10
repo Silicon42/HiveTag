@@ -43,19 +43,20 @@
 			<!-- start of the data region, clear bits come first. If it's a cutter
 			version, then all set bits are changed to using hexagons instead of circles
 			and get wrapped in a group tag to set fill="#FFF" across all of them. -->
-			<use href="#C" y="-5" x="-1"/>
-			<use href="#C" y="-5" x="1"/>
-			<use href="#C" y="-2"/>	<!-- 0 values can be ommitted as that's default behavior-->
-			<use href="#C" y="-2" x="2"/>
-			<use href="#C" y="1" x="3"/>
-			<use href="#C" y="4" x="2"/>
-			<use href="#C" y="1" x="1"/>
+			<use href="#C" x="-1" y="-5"/>
+			<use href="#C" x="1" y="-5"/>
+			<use href="#C" y="-2"/><!-- 0 values can be ommitted as that's default behavior-->
+			<use href="#C" x="2" y="-2"/>
+			<use href="#C" x="3" y="1"/>
 			<use href="#C" y="4"/>
-			<!-- the set bits come now -->
-			<use href="#H" y="4" x="-2"/>
-			<use href="#H" y="1" x="-3"/>
-			<use href="#H" y="1" x="-1"/>
-			<use href="#H" y="-2" x="-2"/>
+			<!-- the set bits come now, they must come after the circles to overwrite the
+			rouded edges of the circles -->
+			<use href="#H" x="2" y="4"/>
+			<use href="#H" x="1" y="1"/>
+			<use href="#H" x="-2" y="4"/>
+			<use href="#H" x="-3" y="1"/>
+			<use href="#H" x="-1" y="1"/>
+			<use href="#H" x="-2" y="-2"/>
 			<!-- this punches off any black from the circles that extends out of the data
 			region. It's done by redrawing the corners because masking the data region
 			would lead to white hairline edges on black hexagons that extend past the 
