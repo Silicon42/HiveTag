@@ -65,10 +65,10 @@ int main()
 	const uint64_t i_bound = (uint64_t)1 << (k*GF16_SYM_SZ);
 	const int num_chk_syms = n - k;
 
-	char format_cw[] = "CW: %01X/%01X/%01X";
+	char format_cw[] = "CW: %00X/%00X/%00X";
 	format_cw[6] = format_cw[11] = format_cw[16] = '0' + nDiv3;
-	char format_sums[] = " SUM2: %02X SUM3: %02X\n";
-	format_sums[9] = format_sums[20] = '0' + nDiv3;
+	char format_sums[] = " SUM2: %00X/%00X SUM3: %00X\n";
+	format_sums[9] = format_sums[14] = format_sums[25] = '0' + nDiv3;
 
 	char filename[16];
 	sprintf(filename, "n%i_k%i.txt", n, k);
@@ -121,9 +121,10 @@ int main()
 		fprintf(output_fp, format_cw, third2, third1, third0);
 		//fprintf(output_fp, "CW: %013llX", codeword);
 
-		gf16_elem sum2 = third0 ^ third1;
-		gf16_elem sum3 = sum2 ^ third2;
-		fprintf(output_fp, format_sums, sum2, sum3);
+		gf16_elem sum2r = third0 ^ third1;
+		gf16_elem sum2l = third2 ^ third1;
+		gf16_elem sum3 = sum2r ^ third2;
+		fprintf(output_fp, format_sums, sum2l, sum2r, sum3);
 	}
 	fclose(output_fp);
 
