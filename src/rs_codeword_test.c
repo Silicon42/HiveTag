@@ -1,112 +1,116 @@
+// This is a test program to help me understand how to algorithmically convert between an ID and
+//  orientation, and the encoded reed-solomon data and vice versa such that no actual dictionary
+//  of codewords is ever required
 
 #include "rs_gf16.h"
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 #define THIRD_MASK 0xFFFFF
 #define TWO_THIRD_MASK 0xFFFFFFFFFF
-#define THIRD_SIZE 20
+#define THIRD_SYMS 5
+#define THIRD_SIZE THIRD_SYMS*GF16_SYM_SZ
 
 int main()
 {
-	// I wanted to have the program read the base svg from a file but from the below and how much time I spent
-	//  writing it, that seems to be too much added complexity compared to just including it as a string literal
-	/*
-	FILE* marker_fp = fopen(MARKER_BASE_SVG, "r");
-	if (marker_fp == NULL)
+	// constants specific to n and k combinations for which scaling by the value of a given position in a normally
+	//  encoded Reed-Solomon codeword forces that position to 0 and swaps the check symbol position to a transmitted
+	//  but otherwise unused term earlier in the codeword. Obtained via gen_chk_sym_shifter.c with more explanation
+	//  there.
+	const gf16_poly csym_mover1[] = {
+		0xD0013A,	0xBB001E9,
+		0x901CBB,	0x2B016DE,	0x77D01F8C,	0xA00217016BD,
+		0x517DA5,	0x2E16B7B,	0x8A213D92,	0xDF141E8A3,	0xF0957312282,	0xCE06DB91A674
+	};
+	const gf16_poly csym_mover2[] = {
+		0,			0xD4010FD,
+		0,			0xE110CF9,	0x13610F25,	0xD00E9B10776,
+		0,			0,			0,			0,				0,				0xC314686035E1
+	};
+
+	int nDiv3, k;
+
+	while(1)
 	{
-		perror("Couldn't open " MARKER_BASE_SVG ". Is it missing?\n");
-		return 1;
+		printf("Select a valid 'n/3' value (1 <= n <= 5): ");
+		nDiv3 = getchar();
+		getchar();	// eat the '\n'
+		nDiv3 -= '0';
+		if(1 <= nDiv3 && nDiv3 <= 5)
+			break;
 	}
-	
-	char marker_base[1024] = {0};
-	// read the whole marker base into a c string
-	size_t read = fread(marker_base, 1, sizeof(marker_base) - 34, marker_fp);	//34 is the number of decimal characters to fully specify 2 doubles
-	if (!feof(marker_fp))	// if we didn't reach the end of the file,
+	const int n = 3*nDiv3;
+	if(n > 3)
 	{
-		if (ferror(marker_fp))	// then an error occured while reading it
+		while(1)
 		{
-			perror("Error while reading " MARKER_BASE_SVG ".\n");
-			fclose(marker_fp);
-			return 2;
+			printf("Select a valid 'k' value in hex (2 <= k <= %X): ", n-1);
+			k = getchar();
+			getchar();	// eat the '\n'
+			//quick and dirty hex to integer conversion, '@' and '`' get misread as 9
+			k |= 0x20;
+			k -= '0';
+			if(k > 9)
+				k -= 39;
+			if(1 < k && k < n)
+				break;
 		}
-		// or the file was too long to fit in the buffer, this shouldn't happen unless marker_base.svg is modified
-		perror(MARKER_BASE_SVG " was too long. Recompile with a larger buffer and try again.\n");
-		fclose(marker_fp);
-		return 3;
 	}
-	fclose(marker_fp);
-
-	// find the start of the footer section
-	int footer_i;
-	do
-	{
-		// seek backward from file end to find the last closing g tag "</g>" candidate
-		//  8 is the minimum number of characters the 'g' could be from the end of a valid svg file
-		for (footer_i = read - 8; marker_base[footer_i] != 'g'; --footer_i);
-		footer_i -= 2;
-	} while (strncmp(&marker_base[footer_i], "</g>", 4));	// check that it actually is a closing "</g>"
-	// continue seeking backward to the next newline
-	for (--footer_i; marker_base[footer_i] != '\n'; --footer_i);
-	++footer_i;
-
-	int footer_len = footer_i - read;
-	for(int i = 0; i >= 0; ++i)
-	{
-		marker_base[sizeof(marker_base) - j]
-	}
-	*/
-	/*
-	int8_t syms_per_third = 1;	// valid values are 1 thru 5, and values outside get limited to this range
-	int8_t mode = 1;	// shingled mode == 0, standard == 1 thru 14 capped to syms_per_third symbols if syms_per_third < 5
-	gf16_poly pad = 0;	// what to place into the un-transmitted code region, anything that would extend past the remaining symbols in a third is discarded
-	//TODO: padding content seems to not effect encoding values so this variable can probably be removed
-
-	//input range protection logic
-	syms_per_third = (syms_per_third < 1) ? 1 : syms_per_third;	//input protection lower bound
-	if(syms_per_third < 5)
-		mode = (mode > syms_per_third) ? syms_per_third : mode;	// cap mode to syms_per_third if syms_per_third != 5
 	else
-	{
-		syms_per_third = 5;	//input protection upper bound
-		mode = (mode > 14) ? 14 : mode;	// cap mode to 14 check symbols, 1 data symbol
-	}
+		k = 2;	//only valid k value at that size
 
-	gf16_idx bits_per_third = GF16_SYM_SZ * syms_per_third;
-	pad &= THIRD_MASK >> bits_per_third;	//only keep enough to pad the untransmitted portion
+	//mask that represents the valid transmit region for the cyclic version of the RS code for given n
+	const gf16_poly tx_third_mask = ~((uint64_t)-1 << (n/3 * GF16_SYM_SZ));
+	//const gf16_poly tx_mask = tx_third_mask | tx_third_mask << (THIRD_SIZE) | tx_third_mask << (2*THIRD_SIZE);
 
-	if(mode != 0)	// shingled mode doesn't get repeated padding
-		pad |= (pad << THIRD_SIZE) | (pad << (2 * THIRD_SIZE));
+	const uint64_t i_bound = (uint64_t)1 << (k*GF16_SYM_SZ);
+	const int num_chk_syms = n - k;
 
-	// NOTE: everything beyond this point assumes mode != 0 for now, WIP
-	uint32_t third_tx_mask = ~((uint32_t)-1 << bits_per_third);
-	int8_t data_syms = 3 * syms_per_third - mode;
-	uint64_t limit = GF16_MAX + 1;
-	for(int i = 1; i < data_syms; ++i)
-		limit *= limit;
-	// the number of codewords has the potential to be huge and size isn't known at compile time so it must be
-	//  malloc'd on the heap
-	//gf16_poly* codewords = malloc(limit*sizeof(gf16_poly));
-	//memset(codewords, -1, limit*sizeof(gf16_poly));	//init to invalid data to easily differentiate set values
-*/
-	FILE* marker_fp = fopen("marker_test3.txt", "w");
+	char format_cw[] = "CW: %01X/%01X/%01X";
+	format_cw[6] = format_cw[11] = format_cw[16] = '0' + nDiv3;
+	char format_sums[] = " SUM2: %02X SUM3: %02X\n";
+	format_sums[9] = format_sums[20] = '0' + nDiv3;
+
+	char filename[16];
+	sprintf(filename, "n%i_k%i.txt", n, k);
+	FILE* output_fp = fopen(filename, "w");
 	uint32_t non_orientable_cnt = 0;
-	for (uint64_t i = 0; i < 256; ++i)
+	for (uint64_t i = 0; i < i_bound; ++i)
 	{
-		gf16_poly raw_data;
-		raw_data = i ;//& 0xF;
-		//raw_data |= (i >> 4) << THIRD_SIZE;	// 2nd third
-		//raw_data |= ((i >> (2 * bits_per_third)) & third_tx_mask) << (2 * THIRD_SIZE);	// 3rd third, only has an effect when syms_per_third == 5
-		raw_data <<= 6*GF16_SYM_SZ;//THIRD_SIZE - 8;
-
-		gf16_poly codeword = rs16_encode(raw_data, 4);
-		codeword ^= gf16_poly_scale(0xBB001E9, (codeword >> 8) & GF16_MAX);
-		codeword ^= gf16_poly_scale(0xD4010FD, (codeword >> 12) & GF16_MAX);
-
+		// convert loop index to raw data to be entered to Reed-Solomon encoder, injecting padding where needed
+		gf16_poly raw_data = 0;
+		int k_copy = k;
+		int third_cnt = 0;
+		while(k_copy >= nDiv3)	//handles data that fills a full third, executes at most twice
+		{
+			k_copy -= nDiv3;
+			raw_data |= (i >> (k_copy*GF16_SYM_SZ)) & tx_third_mask;
+			raw_data <<= THIRD_SIZE;
+			++third_cnt;
+		}
+		raw_data |= (i << ((nDiv3 - k_copy)*GF16_SYM_SZ)) & tx_third_mask;
+		while (++third_cnt < 3)
+			raw_data <<= THIRD_SIZE;
+		raw_data >>= num_chk_syms*GF16_SYM_SZ;
+		
+		// generate the cyclic codeword by first encoding and then adding the linearly scaled factor corresponding
+		//  to holding any terms that must be padding at zero and thus pushing the effective check symbol position
+		//  backwards to an otherwise unused data position
+		gf16_poly codeword = rs16_encode(raw_data, num_chk_syms);
+		if(nDiv3 < 5 && num_chk_syms > nDiv3)
+		{
+			int bit_idx = nDiv3*GF16_SYM_SZ;
+			int csm_idx = (nDiv3-2)*(nDiv3-2) + num_chk_syms - 3;
+			codeword ^= gf16_poly_scale(csym_mover1[csm_idx], (codeword >> bit_idx) & GF16_MAX);
+			// for many values there isn't a valid 2nd check symbol to move but extra logic here doesn't make sense
+			//  for what is essentially a program I should only need a handful of times so instead the second array
+			//  just has 0 padding for those values which should result in no change
+			bit_idx = nDiv3 < 5 ? bit_idx + GF16_SYM_SZ : 9 * GF16_SYM_SZ;
+			codeword ^= gf16_poly_scale(csym_mover2[csm_idx], (codeword >> bit_idx) & GF16_MAX);
+		}
+		
 		if((codeword & TWO_THIRD_MASK) == codeword >> THIRD_SIZE)
 		{
-			fprintf(marker_fp, "Non-orientable ");
+			fprintf(output_fp, " N/O ");
 			++non_orientable_cnt;
 		}
 
@@ -114,20 +118,16 @@ int main()
 		third0 = codeword & THIRD_MASK;
 		third1 = (codeword >> THIRD_SIZE) & THIRD_MASK;
 		third2 = codeword >> (2*THIRD_SIZE);
-		fprintf(marker_fp, "CW: %02X/%02X/%02X", third2, third1, third0);
-		//fprintf(marker_fp, "CW: %012llX", codeword);
+		fprintf(output_fp, format_cw, third2, third1, third0);
+		//fprintf(output_fp, "CW: %013llX", codeword);
 
 		gf16_elem sum2 = third0 ^ third1;
 		gf16_elem sum3 = sum2 ^ third2;
-		//gf16_elem prod = gf16_mul(gf16_mul(i & GF16_MAX, (i >> GF16_SYM_SZ) & GF16_MAX), codeword & GF16_MAX);
-		fprintf(marker_fp, " SUM2: %02X SUM3: %02X\n", sum2, sum3);
-		//marker_fp = fopen("markers/", "w");
+		fprintf(output_fp, format_sums, sum2, sum3);
 	}
-	fclose(marker_fp);
+	fclose(output_fp);
 
 	printf("Found %i non-orientable codewords.\n", non_orientable_cnt);
 
-	//free(codewords);
-//*/
 	return 0;
 }
