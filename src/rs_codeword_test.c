@@ -104,7 +104,7 @@ int main()
 			// for many values there isn't a valid 2nd check symbol to move but extra logic here doesn't make sense
 			//  for what is essentially a program I should only need a handful of times so instead the second array
 			//  just has 0 padding for those values which should result in no change
-			bit_idx = nDiv3 < 5 ? bit_idx + GF16_SYM_SZ : 9 * GF16_SYM_SZ;
+			bit_idx = nDiv3 < 4 ? bit_idx + GF16_SYM_SZ : 9 * GF16_SYM_SZ;
 			codeword ^= gf16_poly_scale(csym_mover2[csm_idx], (codeword >> bit_idx) & GF16_MAX);
 		}
 		
@@ -121,9 +121,9 @@ int main()
 		fprintf(output_fp, format_cw, third2, third1, third0);
 		//fprintf(output_fp, "CW: %013llX", codeword);
 
-		gf16_elem sum2r = third0 ^ third1;
-		gf16_elem sum2l = third2 ^ third1;
-		gf16_elem sum3 = sum2r ^ third2;
+		uint32_t sum2r = third0 ^ third1;
+		uint32_t sum2l = third2 ^ third1;
+		uint32_t sum3 = sum2r ^ third2;
 		fprintf(output_fp, format_sums, sum2l, sum2r, sum3);
 	}
 	fclose(output_fp);

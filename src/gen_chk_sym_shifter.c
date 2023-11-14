@@ -47,9 +47,9 @@ int main()
 	gf16_poly diff;
 	gf16_elem scale_factor;
 
-	for(int n_over_3 = 1; n_over_3 < 5; ++n_over_3)
+	for(int nDiv3 = 1; nDiv3 < 5; ++nDiv3)
 	{
-		chk_syms = n_over_3 + 1;
+		chk_syms = nDiv3 + 1;
 		normal_enc = rs16_encode(raw, chk_syms);
 		to_move_bits = THIRD_BITS - GF16_SYM_SZ * chk_syms;	//how many bits to shift the check symbol by
 
@@ -61,9 +61,9 @@ int main()
 				break;
 		}
 		diff = normal_enc ^ fixed_enc;
-		scale_factor = gf16_inverse((diff >> (n_over_3 * GF16_SYM_SZ)) & GF16_MAX);
+		scale_factor = gf16_inverse((diff >> (nDiv3 * GF16_SYM_SZ)) & GF16_MAX);
 		diff = gf16_poly_scale(diff, scale_factor);
-		printf("To shift 1 check symbol for n = %i, scale 0x%llX by term %i\n", n_over_3 * 3, diff, n_over_3);
+		printf("To shift 1 check symbol for n = %i, scale 0x%llX by term %i\n", nDiv3 * 3, diff, nDiv3);
 		raw >>= GF16_SYM_SZ;
 		to_move_mask <<= GF16_SYM_SZ;	//where to shift the symbol from
 
