@@ -3,12 +3,8 @@
 //  of codewords is ever required
 
 #include "rs_gf16.h"
+#include "ht_math_defs.h"
 #include <stdio.h>
-
-#define THIRD_MASK 0xFFFFF
-#define TWO_THIRD_MASK 0xFFFFFFFFFF
-#define THIRD_SYMS 5
-#define THIRD_SIZE THIRD_SYMS*GF16_SYM_SZ
 
 int main()
 {
@@ -59,20 +55,24 @@ int main()
 		k = 2;	//only valid k value at that size
 
 	//mask that represents the valid transmit region for the cyclic version of the RS code for given n
-	const gf16_poly tx_third_mask = ~((uint64_t)-1 << (n/3 * GF16_SYM_SZ));
+	const gf16_poly tx_third_mask = ~(-1LL << (n/3 * GF16_SYM_SZ));
 	//const gf16_poly tx_mask = tx_third_mask | tx_third_mask << (THIRD_SIZE) | tx_third_mask << (2*THIRD_SIZE);
 
-	const uint64_t i_bound = (uint64_t)1 << (k*GF16_SYM_SZ);
+	const uint64_t i_bound = 1LL << (k*GF16_SYM_SZ);
 	const int num_chk_syms = n - k;
 
-	char format_cw[] = "CW: %00X/%00X/%00X";
-	format_cw[6] = format_cw[11] = format_cw[16] = '0' + nDiv3;
-	char format_sums[] = " SUM2: %00X/%00X SUM3: %00X\n";
-	format_sums[9] = format_sums[14] = format_sums[25] = '0' + nDiv3;
+	char format_cw[] = "%00X/%00X/%00X\n";
+	format_cw[2] = format_cw[7] = format_cw[12] = '0' + nDiv3;
+	//char format_sums[] = " 2: %00X/%00X 3: %00X\n";
+	//format_sums[6] = format_sums[11] = format_sums[19] = '0' + nDiv3;
 
-	char filename[16];
-	sprintf(filename, "n%i_k%i.txt", n, k);
-	FILE* output_fp = fopen(filename, "w");
+	FILE* output_fp;
+	{
+		char filename[16];
+		sprintf(filename, "n%i_k%i.txt", n, k);
+		output_fp = fopen(filename, "w");
+	}
+
 	uint32_t non_orientable_cnt = 0;
 	for (uint64_t i = 0; i < i_bound; ++i)
 	{
@@ -95,7 +95,7 @@ int main()
 		// generate the cyclic codeword by first encoding and then adding the linearly scaled factor corresponding
 		//  to holding any terms that must be padding at zero and thus pushing the effective check symbol position
 		//  backwards to an otherwise unused data position
-		gf16_poly codeword = rs16_encode(raw_data, num_chk_syms);
+		gf16_poly codeword = rs16_encode_systematic(raw_data, num_chk_syms);
 		if(nDiv3 < 5 && num_chk_syms > nDiv3)
 		{
 			int bit_idx = nDiv3*GF16_SYM_SZ;
@@ -107,24 +107,25 @@ int main()
 			bit_idx = nDiv3 < 4 ? bit_idx + GF16_SYM_SZ : 9 * GF16_SYM_SZ;
 			codeword ^= gf16_poly_scale(csym_mover2[csm_idx], (codeword >> bit_idx) & GF16_MAX);
 		}
-		
+/*
 		if((codeword & TWO_THIRD_MASK) == codeword >> THIRD_SIZE)
 		{
 			fprintf(output_fp, " N/O ");
 			++non_orientable_cnt;
 		}
-
+*/
 		uint32_t third0, third1, third2;
 		third0 = codeword & THIRD_MASK;
 		third1 = (codeword >> THIRD_SIZE) & THIRD_MASK;
 		third2 = codeword >> (2*THIRD_SIZE);
-		fprintf(output_fp, format_cw, third2, third1, third0);
-		//fprintf(output_fp, "CW: %013llX", codeword);
-
+		if((third0 ^ third1 ^ third2) == 0)	//reduced file size since I've determined the effects of the non-rotational data so should work on larger data sizes
+			fprintf(output_fp, format_cw, third2, third1, third0);
+/*
 		uint32_t sum2r = third0 ^ third1;
 		uint32_t sum2l = third2 ^ third1;
 		uint32_t sum3 = sum2r ^ third2;
 		fprintf(output_fp, format_sums, sum2l, sum2r, sum3);
+*/
 	}
 	fclose(output_fp);
 

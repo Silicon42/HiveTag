@@ -98,7 +98,7 @@
 		pad |= (pad << THIRD_SIZE) | (pad << (2 * THIRD_SIZE));
 
 	// NOTE: everything beyond this point assumes mode != 0 for now, WIP
-	uint32_t third_tx_mask = ~((uint32_t)-1 << bits_per_third);
+	uint32_t third_tx_mask = ~(-1L << bits_per_third);
 	int8_t data_syms = 3 * syms_per_third - mode;
 	uint64_t limit = GF16_MAX + 1;
 	for(int i = 1; i < data_syms; ++i)
