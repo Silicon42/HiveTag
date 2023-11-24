@@ -3,28 +3,31 @@ MAKEFLAGS += --no-builtin-rules  #black magic removal
 # If the .d (dependency) files are manually removed the dependencies for include files will not
 # get picked up unless there is a change in the .c file or until the next "make clean" is executed.
 
+MODULE_DIR := submodules/Tiny_ECC/ReedSolomon/
+MODULE_SRC_DIR := $(MODULE_DIR)src/
+MODULE_INC_DIR := $(MODULE_DIR)inc/
+MODULE_OBJ_DIR := $(MODULE_DIR)obj/
 
-OBJ_DIR = ./obj/
-SRC_DIR = ./src/
-INC_DIRS = ./inc/
-LIB_DIRS = ./lib/
+OBJ_DIR := obj/
+SRC_DIR := src/
+INC_DIRS := inc/ $(MODULE_INC_DIR)
 # .c files in this directory have a main function in them and are thus mutually exclusive when linking
-APPS_DIR = ./apps/
+APPS_DIR := apps/
 
 # gets a list of all applications in the apps dir for filtering build targets
-APP_LIST = $(basename $(shell find $(APPS_DIR) -type f -printf "%f\n"))
+APP_LIST := $(basename $(shell find $(APPS_DIR) -type f -printf "%f\n"))
 
 # The name of the executable to build -- it will end up in the working directory
-BUILD_TARGET = $(filter $(APP_LIST),$(MAKECMDGOALS))
+BUILD_TARGET := $(filter $(APP_LIST),$(MAKECMDGOALS))
 
 # Following are the search paths for prerequisites 
 vpath %.h $(INC_DIRS)	# Include file search path includes the source path  -- This should also be conveyed to the complile rule
-vpath %.c $(SRC_DIR) $(APPS_DIR)
+vpath %.c $(SRC_DIR) $(APPS_DIR) $(MODULE_SRC_DIR)
 #vpath %.d $(OBJ_DIR)
 
 # Add a prefix to INC_DIRS to add the "-I" compile flag 
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
-CPPFLAGS := $(INC_FLAGS) -MMD -MP		#-MMD and -MP generates the .d files when a .c file is compiled
+CPPFLAGS := $(INC_FLAGS) -MMD -MP #-MMD and -MP generates the .d files when a .c file is compiled
 
 # Manually entering the obj targets
 #OBJfiles := sub.o main.o	
@@ -41,12 +44,20 @@ APP_OBJECTS := $(subst $(APPS_DIR),$(OBJ_DIR),$(APP_SOURCES:.c=.o))
 SOURCES := $(shell find $(SRC_DIR) -name "*.c")
 OBJECTS := $(subst $(SRC_DIR),$(OBJ_DIR),$(SOURCES:.c=.o))
 
+# Hardcoded because these are the only two ever needed by this project and that shouldn't change anytime soon
+MODULE_OBJECTS := $(addprefix $(MODULE_OBJ_DIR),gf16.o rs_gf16.o)
+
 # String substitution (suffix version without %).
 # As an example, ./build/hello.cpp.o turns into ./build/hello.cpp.d
-DEPS := $(OBJECTS:.o=.d) $(TARGET_OBJ:.o=.d)
+DEPS := $(OBJECTS:.o=.d) $(APP_OBJECTS:.o=.d)
 
 #####   First Target -- This is what gets built by default #####
-$(BUILD_TARGET) :$(OBJECTS) $(TARGET_OBJ)	# This will drive the creation of the .o files in the OBJdir for the prerequisites 
+.PHONY: all
+all: $(OBJECTS) $(APP_OBJECTS)
+	$(MAKE) all -C $(MODULE_DIR)
+	@echo compiled all objects
+
+$(BUILD_TARGET) :$(OBJECTS) $(TARGET_OBJ) $(MODULE_OBJECTS)	# This will drive the creation of the .o files in the OBJdir for the prerequisites 
 	@#echo "$@ link rule"
 	$(CC) $(LDFLAGS) $(TARGET_ARCH) $^ $(LOADLIBES) $(LDLIBS) -o $@
 
@@ -56,12 +67,13 @@ $(OBJ_DIR)%.o : %.c				# pattern rule picks up the .c as a pre-req for a .o
 	@mkdir -p '$(@D)'
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
-.PHONY: all
-all: $(OBJECTS) $(APP_OBJECTS)
-	@echo compiled all objects
+$(MODULE_OBJ_DIR)%.o : %.c
+	@echo "making $(subst $(MODULE_DIR),./,$@)"
+	$(MAKE) $(subst $(MODULE_DIR),./,$@) -C $(MODULE_DIR)
 
 .PHONY: clean
 clean:
+	$(MAKE) clean -C $(MODULE_DIR)
 	@echo cleaning $(OBJ_DIR)
 	@rm -rf $(OBJ_DIR)			# removing all of the OBJS forces a complete re-compile / re-link
 	@rm -f *.exe				# just for good measure remove the exe as well 
