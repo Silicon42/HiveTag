@@ -57,11 +57,20 @@ all: $(OBJECTS) $(APP_OBJECTS)
 	$(MAKE) all -C $(MODULE_DIR)
 	@echo compiled all objects
 
+# VScode Makefile tools is stupid and doesn't allow manually adding targets, instead it only allows
+#  explicitly specified targets so these are dummy rules for the apps
+gen_chk_sym_shifter:
+gen_basis_vectors:
+gen_tags:
+rs_codeword_test:
+test_ids:
+
+
 $(BUILD_TARGET) :$(OBJECTS) $(TARGET_OBJ) $(MODULE_OBJECTS)	# This will drive the creation of the .o files in the OBJdir for the prerequisites 
-	@#echo "$@ link rule"
+	@echo "$@ link rule"
 	$(CC) $(LDFLAGS) $(TARGET_ARCH) $^ $(LOADLIBES) $(LDLIBS) -o $@
 
-# the compile rule for the prerequisits of the final target -- 
+# the compile rule for the prerequisits of the final target --
 $(OBJ_DIR)%.o : %.c				# pattern rule picks up the .c as a pre-req for a .o
 	@#echo "MY pattern rule .c to .o via OBJ_DIR"
 	@mkdir -p '$(@D)'
