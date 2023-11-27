@@ -21,12 +21,12 @@
 //  time, the selected factor can be applied via polynomial multiply with the id data that will be stored
 //  as rotation independent data and at decode time, can be read back via masking without an additional
 //  multiplicative inversion
-const int32_t rotation_independent[] = {
-	0x00001,
-	0x000F1,
-	0x00C51,
-	0x0F591,
-	0x11111
+const gf16_poly rotation_independent[] = {
+	0x000010000100001,
+	0x000F1000F1000F1,
+	0x00C5100C5100C51,
+	0x0F5910F5910F591,
+	0x111111111111111
 };
 
 // by convention the left most symbols are the ones that determine the scale such that at decode time,
@@ -66,24 +66,42 @@ const gf16_poly rotation_dependent[] = {
 	0x000000001200012	// k == 14
 };
 
+// normal IDs are always positive, inverted color IDs must be negated first before passing
 gf16_poly id_to_codeword(int64_t id, int8_t nDiv3, int8_t k)
 {
+	//FIXME: add upper ID range check, requires calculation
+	if(id <= 0)
+		return -1;
+	
 	--id;	//convert to 0 indexed
-	//FIXME: add ID range check
 	int8_t indep_syms = (k + 2) / 3;
+	int8_t dep_syms = k - indep_syms;
 	gf16_idx split_loc = indep_syms * GF16_SYM_SZ;
 	int32_t indep_component = id & ((1L << split_loc) - 1);	// mask to isolate the rotationally independent data
 
 	// encode the rotationally independent data in codeword form
-	gf16_poly codeword = gf16_poly_mul(rotation_dependent[nDiv3 - indep_syms], indep_component);
+	gf16_poly codeword = gf16_poly_mul(rotation_independent[nDiv3 - indep_syms], indep_component);
 
 	id >>= split_loc;	// down shift to isolate rotationally dependent data
 
-	//FIXME: handle non-orientable codeword IDs
-	// find which offset to use, the offset is what allows for hierarchical id ordering to work
+	// find which offset to use, the offset is what allows for consecutive id ordering to work
 	int8_t o_pos = 0;
-	while(id < id_offsets[o_pos])
-		++o_pos;
+	while(id >= id_offsets[++o_pos]);
+	--o_pos;
+
+	//TODO: move most of this and other large explainer blocks to documentation with a reference to it.
+	// check if the ID is for a non-orientable codeword. They have no rotationally dependent component and look
+	//  the same in all 3 possible orientations and so cannot provide a full pose solution on their own without
+	//  some form of side-channel information. As such they are always tacked on at the end of the ID range
+	//  because they are the least desirable to use and should only be used as a last resort if all preceding
+	//  IDs have already been used. THEIR IDs ARE NOT STATIC with increasing k values as they occupy the position
+	//  of the next set to be added normally. I chose not to put them in the negative range to allow for color
+	//  inversion to be natively supported to allow for relatively cheap doubling of the available IDs with IDs
+	//  of color inverted markers being negative. I chose not put them in the extreme high range of the int64
+	//  type to allow for systems that know they are using a limited range to use smaller data types to store
+	//  the IDs
+	if(o_pos >= dep_syms)	// technically this should only ever be o_pos == indep_syms at most but safety first
+		return codeword;
 
 	id -= id_offsets[o_pos];	// remove the offset
 	// o_pos is now the symbol index of the most significant non-zero ID data symbol
@@ -91,7 +109,7 @@ gf16_poly id_to_codeword(int64_t id, int8_t nDiv3, int8_t k)
 	gf16_idx orientor_loc = o_pos * GF16_SYM_SZ;
 	uint32_t dep_data = id & ((1L << orientor_loc) - 1);	// mask to isolate the normally encoded ID data
 	gf16_elem orientor = id >> orientor_loc;	// down shift to isolate the orientor symbol
-	int8_t dep_basis_offset = (nDiv3 - 1);	// TODO: consider converting some settings to a struct or C++ class so that they don't need re-calculation
+	int8_t dep_basis_offset = (nDiv3 - 1);		// TODO: consider converting some settings to a struct or C++ class so that they don't need re-calculation
 	dep_basis_offset *= dep_basis_offset;
 	const gf16_poly* dep_basis = &rotation_dependent[dep_basis_offset];
 

@@ -4,6 +4,7 @@
 
 #include "gf16.h"
 #include "ht_math_defs.h"
+#include "codeword_to_id.h"
 
 // by convention, the right most symbols are the ones that determine scale such that at tag generation
 //  time, the selected factor can be applied via polynomial multiply with the id data that will be stored
@@ -53,10 +54,8 @@ const uint32_t rotation_dep[] = {
 };
 
 //returns the orientation on the stack and the ID via pass by ref
-int8_t codeword_to_id(gf16_poly codeword, int8_t nDiv3, int8_t k, int64_t* id)
+struct oriented_id codeword_to_id(gf16_poly codeword, int8_t nDiv3, int8_t k)
 {
-	if(id == NULL)	//no NULL pointers allowed
-		return -1;
 	uint32_t third0, third1, third2;
 	third0 = codeword & THIRD_MASK;
 	third1 = (codeword >> THIRD_SIZE) & THIRD_MASK;
@@ -70,8 +69,9 @@ int8_t codeword_to_id(gf16_poly codeword, int8_t nDiv3, int8_t k, int64_t* id)
 
 	int32_t indep_data = 0;	// accumulator for the rotation indepent data
 	int8_t indep_syms = (k + 2)/3;	// the number of data symbols encoded in the sum of all 3 thirds
+	int8_t dep_syms = k - indep_syms;
 	
-	gf16_idx indep_sz = 0;	// WARNING: because of potential early completion of the following while loop, this is not reliably the actual size in bits of the independent data size
+	gf16_idx indep_sz = 0;	// WARNING: because of potential early completion of the following while loop, this is not reliably the actual size in bits of the independent data segment
 	int32_t indep_factor = rotation_indep[nDiv3 - indep_syms];	//which entry in the table should be used
 
 	while(indep_component)	// while there is remaining cyclically independent component
@@ -92,24 +92,28 @@ int8_t codeword_to_id(gf16_poly codeword, int8_t nDiv3, int8_t k, int64_t* id)
 	int8_t dep_basis_offset = (nDiv3-1);	// TODO: consider converting some settings to a struct or C++ class so that they don't need re-calculation
 	dep_basis_offset *= dep_basis_offset;
 	const uint32_t* dep_basis = &rotation_dep[dep_basis_offset];
-	*id = 0;
+	struct oriented_id tag = {0,0};
 
 	const gf16_idx third_tx_sz = nDiv3 * GF16_SYM_SZ;
 	const gf16_idx third_tx_m1_sz = third_tx_sz - GF16_SYM_SZ;
 	int8_t factors;
-	int8_t orientation = 1;
 
-	while(1)	//this code gets run either once or twice depending on if the read orientation is the base orientation
+	// this code gets run either once or twice depending on if the read orientation is the base orientation
+	//TODO: verify there is no way to simply correct the calculated ID rather than running again
+	while(1)
 	{
 		int32_t dep_data = 0;
 		uint32_t cw_shrunk = third1 << (32 - third_tx_sz);	// overall shift of third1 in cw_shrunk can be + or -, so must be done as 2 shifts
 		cw_shrunk >>= third_tx_m1_sz;
 		cw_shrunk |= third2 << (32 - third_tx_m1_sz);
 		
-		//preload dep_last, allows for full support of k == 14 while using uint32 for calculations
+		// preload dep_last, allows for full support of k == 14 while using uint32 for calculations
 		gf16_elem dep_last = third2 >> third_tx_m1_sz;
 		factors = 0;
 
+		// scale the current basis vector by the last (most significant) symbol and subtract (XOR) it with the
+		//  codeword to remove the effects of it continuing until the codeword is completely canceled out,
+		//  the amount scaled by becomes the id data
 		while(1)
 		{
 			cw_shrunk ^= gf16_poly_scale(dep_basis[factors], dep_last);
@@ -125,25 +129,27 @@ int8_t codeword_to_id(gf16_poly codeword, int8_t nDiv3, int8_t k, int64_t* id)
 		gf16_elem last_log = gf16_log[dep_last];
 		if(last_log < 5)		// if base orientation or non-orientable, data is correct
 		{
-			if(dep_last)		// if last symbol isn't 0, ie not non-orientable
-			{					// insert the log of the last symbol as the most significant symbol
-				*id = (int64_t)last_log << (factors * GF16_SYM_SZ);
-				++factors;		// include the last symbol in factor count
-			}
-			*id |= dep_data;	// OR in the rest of the rotationally dependent data
+			if(dep_last)	// if last symbol isn't 0, ie not non-orientable
+				tag.id = (int64_t)last_log << (factors * GF16_SYM_SZ);	// insert the log of the last symbol as the most significant symbol
+			else	// else if it's non-orientable it gets tacked at the end of the ID range
+				factors = dep_syms;
+			
+			tag.id |= dep_data;	// OR in the rest of the rotationally dependent data
 			break;
-		}
-		else if(last_log >= 10)
+		}/*
+		else if(last_log >= 10)	// unfortunately which log value indicates a +120 vs +240 degree rotation swaps and I haven't yet determined the pattern
 		{
 			third1 = third2;
 			third2 = third0;
-			orientation = 3;
-		}
+			tag.orientation = 2;
+		}*/
 		else
 		{
+			int32_t temp = third2;
 			third2 = third1;
 			third1 = third0;
-			orientation = 2;
+			third0 = temp;
+			tag.orientation += 1;
 		}
 	}
 
@@ -166,14 +172,13 @@ int8_t codeword_to_id(gf16_poly codeword, int8_t nDiv3, int8_t k, int64_t* id)
 	// add ID offset for when the the last symbol was not the maximum of the independent portion, this allows
 	//  ID values to be contiguous and non-orientable IDs will always be the very last ones and so can be 
 	//  easily discarded with single compare
-	while(indep_syms > factors)	//NOTE: there might be a faster way to calculate this
-	{
-		*id += 5LL << (indep_syms - factors)*GF16_SYM_SZ;
-		++factors;
-	}
-
-	*id <<= indep_syms*GF16_SYM_SZ;	// shift to have room for the rotationally independent data
-	*id |= indep_data;	// OR in the rotationally independent data
-	++*id;	//IDs are 1 indexed such that color inverted markers can easily occupy the negative IDs
-	return orientation;
+	//NOTE: there might be a faster way to calculate this
+	tag.id += id_offsets[factors];
+	// possible alternative:
+	// tag.id += 0x55555555 & ((1L << factors*GF16_SYM_SZ) - 1)
+	
+	tag.id <<= indep_syms*GF16_SYM_SZ;	// shift to have room for the rotationally independent data
+	tag.id |= indep_data;	// OR in the rotationally independent data
+	++tag.id;	// IDs are 1 indexed such that color inverted markers can easily occupy the negative IDs
+	return tag;
 }
