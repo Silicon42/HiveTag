@@ -71,16 +71,17 @@ struct oriented_id codeword_to_id(gf16_poly codeword, int8_t nDiv3, int8_t k)
 	int8_t indep_syms = (k + 2)/3;	// the number of data symbols encoded in the sum of all 3 thirds
 	int8_t dep_syms = k - indep_syms;
 	
-	gf16_idx indep_sz = 0;	// WARNING: because of potential early completion of the following while loop, this is not reliably the actual size in bits of the independent data segment
+	gf16_idx indep_sz = indep_syms*GF16_SYM_SZ;
+	gf16_idx indep_data_sz = 0;	// WARNING: because of potential early completion of the following while loop, this is not reliably the actual size in bits of the independent data segment
 	int32_t indep_factor = rotation_indep[nDiv3 - indep_syms];	//which entry in the table should be used
 
 	while(indep_component)	// while there is remaining cyclically independent component
 	{
-		indep_data |= (indep_component & GF16_MAX) << indep_sz;	// transfer the least significant symbol
+		indep_data |= (indep_component & GF16_MAX) << indep_data_sz;	// transfer the least significant symbol
 		// cancel the effects of that symbol
 		indep_component >>= GF16_SYM_SZ;
 		indep_component ^= gf16_poly_scale(indep_factor, indep_data);
-		indep_sz += GF16_SYM_SZ;	// increment shift amount
+		indep_data_sz += GF16_SYM_SZ;	// increment shift amount
 	}
 
 	// at this point indep_data contains the rotationally independent portion of the data which is taken as the
@@ -88,11 +89,20 @@ struct oriented_id codeword_to_id(gf16_poly codeword, int8_t nDiv3, int8_t k)
 	//  due to having the maximum number of IDs roughly divided by 3 to encode orientation as well, this allows
 	//  the resulting dep_data to be shifted and OR'ed together with the indep_data to recover the ID
 
+	struct oriented_id tag = {0,0};
+	if(!third2 && !third1)	// check if non-orientable, sufficient to check 2 thirds b/c dependent components top out at < 2 thirds of the symbols
+	{
+		tag.id = id_offsets[dep_syms];
+		tag.id <<= indep_sz;
+		tag.id |= indep_data;
+		++tag.id;
+		return tag;
+	}
+
 	// TODO: consider converting some settings to a struct or C++ class so that they don't need re-calculation
 	int8_t dep_basis_offset = (nDiv3-1);
 	dep_basis_offset *= dep_basis_offset;
 	const uint32_t* dep_basis = &rotation_dep[dep_basis_offset];
-	struct oriented_id tag = {0,0};
 
 	const gf16_idx third_tx_sz = nDiv3 * GF16_SYM_SZ;
 	const gf16_idx third_tx_m1_sz = third_tx_sz - GF16_SYM_SZ;
@@ -127,16 +137,12 @@ struct oriented_id codeword_to_id(gf16_poly codeword, int8_t nDiv3, int8_t k)
 		}
 
 		gf16_elem last_log = gf16_log[dep_last];
-		if(last_log < 5)	// if base orientation or non-orientable, data is correct
+		if(last_log < 5)	// if base orientation data is correct
 		{
-			if(dep_last)	// if last symbol isn't 0, ie not non-orientable
-			{	// insert the log of the last symbol as the most significant symbol
-				tag.id = (int64_t)last_log << (factors * GF16_SYM_SZ);
-				// OR in the rest of the rotationally dependent data
-				tag.id |= dep_data;
-			}
-			else			// else it's non-orientable and gets tacked at the end of the ID range
-				factors = dep_syms;
+			// insert the log of the last symbol as the most significant symbol
+			tag.id = (int64_t)last_log << (factors * GF16_SYM_SZ);
+			// OR in the rest of the rotationally dependent data
+			tag.id |= dep_data;
 			
 			break;
 		}/*	// unfortunately which log value indicates a +120 vs +240 degree rotation swaps and I haven't yet determined the pattern
@@ -189,7 +195,7 @@ struct oriented_id codeword_to_id(gf16_poly codeword, int8_t nDiv3, int8_t k)
 	// possible alternative:
 	// tag.id += 0x55555555 & ((1L << factors*GF16_SYM_SZ) - 1)
 	
-	tag.id <<= indep_syms*GF16_SYM_SZ;	// shift to have room for the rotationally independent data
+	tag.id <<= indep_sz;	// shift to have room for the rotationally independent data
 	tag.id |= indep_data;	// OR in the rotationally independent data
 	++tag.id;	// IDs are 1 indexed such that color inverted markers can easily occupy the negative IDs
 	return tag;
