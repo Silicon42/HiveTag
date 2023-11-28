@@ -53,7 +53,7 @@ const gf16_poly rotation_dependent[] = {
 	0x000010A5630A562,	// k == 6,7
 	0x000000152B0152B,	// k == 8
 	0x000000016800168,	// k == 9,10
-	0x000000001200012,	// k == 11		????
+	0x000000001200012,	// k == 11
 	// n/3 == 5
 	0x19DFE7A5BC63842,	// k == 2
 	0x014CCD9594D8158,	// k == 3,4
@@ -84,9 +84,10 @@ gf16_poly id_to_codeword(int64_t id, int8_t nDiv3, int8_t k)
 
 	id >>= split_loc;	// down shift to isolate rotationally dependent data
 
-	// find which offset to use, the offset is what allows for consecutive id ordering to work
+	// find which offset to use, the offset is what allows for contiguous ID ordering to work
 	int8_t o_pos = 0;
 	while(id >= id_offsets[++o_pos]);
+
 	--o_pos;
 
 	//TODO: move most of this and other large explainer blocks to documentation with a reference to it.
@@ -100,7 +101,7 @@ gf16_poly id_to_codeword(int64_t id, int8_t nDiv3, int8_t k)
 	//  of color inverted markers being negative. I chose not put them in the extreme high range of the int64
 	//  type to allow for systems that know they are using a limited range to use smaller data types to store
 	//  the IDs
-	if(o_pos >= dep_syms)	// technically this should only ever be o_pos == indep_syms at most but safety first
+	if(o_pos >= dep_syms)	// technically this should only ever be o_pos == dep_syms at most but safety first
 		return codeword;
 
 	id -= id_offsets[o_pos];	// remove the offset
@@ -115,10 +116,13 @@ gf16_poly id_to_codeword(int64_t id, int8_t nDiv3, int8_t k)
 
 	codeword ^= gf16_poly_scale(dep_basis[o_pos], gf16_exp[orientor]);
 
+	gf16_idx shift_sz = o_pos * GF16_SYM_SZ;
 	for(int8_t i = 0; i < o_pos; ++i)
 	{
-		codeword ^= gf16_poly_scale(dep_basis[i], dep_data & GF16_MAX);
-		dep_data >>= GF16_SYM_SZ;
+		shift_sz -= GF16_SYM_SZ;
+		gf16_elem scalar = (dep_data >> shift_sz) & GF16_MAX;
+		codeword ^= gf16_poly_scale(dep_basis[i], scalar);
+		//dep_data >>= GF16_SYM_SZ;
 	}
 
 	return codeword;

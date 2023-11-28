@@ -88,8 +88,8 @@ struct oriented_id codeword_to_id(gf16_poly codeword, int8_t nDiv3, int8_t k)
 	//  due to having the maximum number of IDs roughly divided by 3 to encode orientation as well, this allows
 	//  the resulting dep_data to be shifted and OR'ed together with the indep_data to recover the ID
 
-	//int8_t dep_syms = k - indep_syms;
-	int8_t dep_basis_offset = (nDiv3-1);	// TODO: consider converting some settings to a struct or C++ class so that they don't need re-calculation
+	// TODO: consider converting some settings to a struct or C++ class so that they don't need re-calculation
+	int8_t dep_basis_offset = (nDiv3-1);
 	dep_basis_offset *= dep_basis_offset;
 	const uint32_t* dep_basis = &rotation_dep[dep_basis_offset];
 	struct oriented_id tag = {0,0};
@@ -127,29 +127,41 @@ struct oriented_id codeword_to_id(gf16_poly codeword, int8_t nDiv3, int8_t k)
 		}
 
 		gf16_elem last_log = gf16_log[dep_last];
-		if(last_log < 5)		// if base orientation or non-orientable, data is correct
+		if(last_log < 5)	// if base orientation or non-orientable, data is correct
 		{
 			if(dep_last)	// if last symbol isn't 0, ie not non-orientable
-				tag.id = (int64_t)last_log << (factors * GF16_SYM_SZ);	// insert the log of the last symbol as the most significant symbol
-			else	// else if it's non-orientable it gets tacked at the end of the ID range
+			{	// insert the log of the last symbol as the most significant symbol
+				tag.id = (int64_t)last_log << (factors * GF16_SYM_SZ);
+				// OR in the rest of the rotationally dependent data
+				tag.id |= dep_data;
+			}
+			else			// else it's non-orientable and gets tacked at the end of the ID range
 				factors = dep_syms;
 			
-			tag.id |= dep_data;	// OR in the rest of the rotationally dependent data
 			break;
-		}/*
-		else if(last_log >= 10)	// unfortunately which log value indicates a +120 vs +240 degree rotation swaps and I haven't yet determined the pattern
+		}/*	// unfortunately which log value indicates a +120 vs +240 degree rotation swaps and I haven't yet determined the pattern
+		else if(last_log >= 10)
 		{
 			third1 = third2;
 			third2 = third0;
 			tag.orientation = 2;
 		}*/
-		else
+		else	// rotate and re-attempt
 		{
-			int32_t temp = third2;
-			third2 = third1;
-			third1 = third0;
-			third0 = temp;
-			tag.orientation += 1;
+			tag.orientation = ((last_log >= 10) ^ (factors & 1)) + 1;
+			//int32_t temp = third2;
+			if(tag.orientation == 1)
+			{
+				third2 = third1;
+				third1 = third0;
+			}
+			else
+			{
+				third1 = third2;
+				third2 = third0;
+			}
+			//third0 = temp;
+			//tag.orientation += 1;
 		}
 	}
 
