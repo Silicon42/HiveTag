@@ -44,6 +44,11 @@ int main()
 	for(int id = 1; id <= 349696; ++id)
 	{
 		codeword = id_to_codeword(id, nDiv3, k);
+		if(id <= 21760)
+		{
+			if(codeword != id_to_codeword(id, nDiv3, k-1))
+				printf("Hierarchical mismatch: %i", id);
+		}
 		// nothing should print here if all codewords generated are valid Reed-Solomon codewords
 		if(rs16_get_errata(codeword, cw_sz, csym_cnt, 0, tx_pos))
 			printf("Invalid RS: id_to_codeword(%i, %i, %i) == 0x%llX\n", id, nDiv3, k, codeword);
