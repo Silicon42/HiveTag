@@ -13,7 +13,7 @@ struct oriented_id_k2 cw_to_id_k2(gf16_poly codeword, int8_t nDiv3)
 	third2 ^= indep_component;
 	if(!third2)	// check if non-orientable
 	{
-		tag.id += 0x51;	// add offset
+		tag.id += 0x51;	// add offset and convert to 1 indexed
 		return tag;
 	}
 
@@ -22,6 +22,7 @@ struct oriented_id_k2 cw_to_id_k2(gf16_poly codeword, int8_t nDiv3)
 	gf16_elem dep_data = gf16_log[dep_component];
 	tag.orientation = dep_data / 5;
 	tag.id |= (dep_data % 5) << GF16_SYM_SZ;
+	++tag.id;	// convert to 1 indexed
 
 	return tag;
 }
