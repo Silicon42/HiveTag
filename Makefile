@@ -2,7 +2,7 @@ MAKEFLAGS += --no-builtin-rules  #black magic removal
 # Note: 
 # If the .d (dependency) files are manually removed the dependencies for include files will not
 # get picked up unless there is a change in the .c file or until the next "make clean" is executed.
-CFLAGS += -g -O0 -Wall -Wextra -Werror
+CFLAGS += -g -O0 -Wall -Wextra -Werror -Wno-shift-negative-value
 
 MODULE_DIR := submodules/Tiny_ECC/ReedSolomon/
 MODULE_SRC_DIR := $(MODULE_DIR)src/
@@ -59,9 +59,10 @@ all: $(OBJECTS) $(APP_OBJECTS)
 	@echo compiled all objects
 
 # VScode Makefile tools is stupid and doesn't allow manually adding targets, instead it only allows
-#  explicitly specified targets so these are dummy rules for the apps
+#  explicitly specified targets so these are dummy rules for the applications.
 gen_chk_sym_shifter:
 gen_basis_vectors:
+gen_cw_to_id_k3_k4_LUT:
 gen_tags:
 rs_codeword_test:
 test_ids:

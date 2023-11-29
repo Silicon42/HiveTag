@@ -50,13 +50,13 @@ int main()
 	for(int nDiv3 = 1; nDiv3 < 5; ++nDiv3)
 	{
 		chk_syms = nDiv3 + 1;
-		normal_enc = rs16_encode(raw, chk_syms);
+		normal_enc = rs16_encode_systematic(raw, chk_syms);
 		to_move_bits = THIRD_BITS - GF16_SYM_SZ * chk_syms;	//how many bits to shift the check symbol by
 
 		//brute force attempt to find what value makes the term to be moved 0
 		for(int64_t i = 1; i < 16; ++i)
 		{
-			fixed_enc = rs16_encode(raw | (i << to_move_bits), chk_syms);
+			fixed_enc = rs16_encode_systematic(raw | (i << to_move_bits), chk_syms);
 			if(!(fixed_enc & to_move_mask))
 				break;
 		}
@@ -83,12 +83,12 @@ int main()
 		if(chk_syms == 9)	// at 9 check symbols, where the 9th will be relocated to must skip the padding gap
 			to_move_bits += GF16_SYM_SZ;
 
-		normal_enc = rs16_encode(raw, chk_syms);
+		normal_enc = rs16_encode_systematic(raw, chk_syms);
 
 		//brute force attempt to find what value makes the term to be moved 0
 		for(int64_t i = 1; i < 16; ++i)
 		{
-			fixed_enc = rs16_encode(raw | (i << to_move_bits), chk_syms);
+			fixed_enc = rs16_encode_systematic(raw | (i << to_move_bits), chk_syms);
 			if(!(fixed_enc & to_move_mask))
 				break;
 		}
@@ -108,7 +108,7 @@ int main()
 	for(int64_t j = 1; j < 256; ++j)
 	{
 		raw = j << (6 * GF16_SYM_SZ);
-		normal_enc = rs16_encode(raw, chk_syms);
+		normal_enc = rs16_encode_systematic(raw, chk_syms);
 
 		// we want only the effects of moving one of the terms, and since we have to mill through
 		//  the posibilites, it might as well be one that doesn't require scaling, that way we only
@@ -119,7 +119,7 @@ int main()
 		//brute force attempt to find what values make the terms to be moved 0
 		for(int64_t i = 1; i < 256; ++i)
 		{
-			fixed_enc = rs16_encode(raw | (i << to_move_bits), chk_syms);
+			fixed_enc = rs16_encode_systematic(raw | (i << to_move_bits), chk_syms);
 			if(!(fixed_enc & to_move_mask))
 				break;
 		}
@@ -137,7 +137,7 @@ int main()
 	for(int64_t j = 1; j < 16; ++j)
 	{
 		raw = j << (6 * GF16_SYM_SZ);
-		normal_enc = rs16_encode(raw, chk_syms);
+		normal_enc = rs16_encode_systematic(raw, chk_syms);
 		printf("normal: 0x%012llX	", normal_enc);
 
 		// we want only the effects of moving one of the terms, and since we have to mill through
@@ -148,7 +148,7 @@ int main()
 		//brute force attempt to find what values make the terms to be moved 0
 		for(int64_t i = 1; i < 4096; ++i)
 		{
-			fixed_enc = rs16_encode(raw | ((i & 0xF00) << to_move_bits) | (i & 0x0FF), chk_syms);
+			fixed_enc = rs16_encode_systematic(raw | ((i & 0xF00) << to_move_bits) | (i & 0x0FF), chk_syms);
 			if(!(fixed_enc & to_move_mask))
 				break;
 		}
@@ -171,7 +171,7 @@ int main()
 	for(int64_t j = 1; j < 65536; ++j)
 	{
 		raw = ((j & 0xF) << (2 * GF16_SYM_SZ)) | ((j & 0xFFF0) << (4 * GF16_SYM_SZ));
-		normal_enc = rs16_encode(raw, chk_syms);
+		normal_enc = rs16_encode_systematic(raw, chk_syms);
 
 		// we want only the effects of moving one of the terms, and since we have to mill through
 		//  the posibilites, it might as well be one that doesn't require scaling. If it's not 
@@ -181,7 +181,7 @@ int main()
 		//brute force attempt to find what values make the terms to be moved 0
 		for(int64_t i = 1; i < 256; ++i)
 		{
-			fixed_enc = rs16_encode(raw | (i << to_move_bits), chk_syms);
+			fixed_enc = rs16_encode_systematic(raw | (i << to_move_bits), chk_syms);
 			if(!(fixed_enc & to_move_mask))
 				break;
 		}
@@ -213,7 +213,7 @@ int main()
 	for(int64_t j = 1; j < 4096; ++j)
 	{
 		raw = j << (4 * GF16_SYM_SZ);
-		normal_enc = rs16_encode(raw, chk_syms);
+		normal_enc = rs16_encode_systematic(raw, chk_syms);
 
 		// we want only the effects of moving one of the terms, and since we have to mill through
 		//  the posibilites, it might as well be one that doesn't require scaling. If it's not 
@@ -223,7 +223,7 @@ int main()
 		//brute force attempt to find what values make the terms to be moved 0
 		for(int64_t i = 1; i < 256; ++i)
 		{
-			fixed_enc = rs16_encode(raw | (i << to_move_bits), chk_syms);
+			fixed_enc = rs16_encode_systematic(raw | (i << to_move_bits), chk_syms);
 			if(!(fixed_enc & to_move_mask))
 				break;
 		}
@@ -255,7 +255,7 @@ int main()
 	for(int64_t j = 1; j < 256; ++j)
 	{
 		raw = j << (4 * GF16_SYM_SZ);
-		normal_enc = rs16_encode(raw, chk_syms);
+		normal_enc = rs16_encode_systematic(raw, chk_syms);
 
 		// we want only the effects of moving one of the terms, and since we have to mill through
 		//  the posibilites, it might as well be one that doesn't require scaling. If it's not 
@@ -265,7 +265,7 @@ int main()
 		//brute force attempt to find what values make the terms to be moved 0
 		for(int64_t i = 1; i < 256; ++i)
 		{
-			fixed_enc = rs16_encode(raw | ((i & 0xF0) << to_move_bits) | (i & 0xF), chk_syms);
+			fixed_enc = rs16_encode_systematic(raw | ((i & 0xF0) << to_move_bits) | (i & 0xF), chk_syms);
 			if(!(fixed_enc & to_move_mask))
 				break;
 		}
@@ -298,7 +298,7 @@ int main()
 	for(int64_t j = 1; j < 16; ++j)
 	{
 		raw = j << (4 * GF16_SYM_SZ);
-		normal_enc = rs16_encode(raw, chk_syms);
+		normal_enc = rs16_encode_systematic(raw, chk_syms);
 		printf("normal: 0x%012llX	", normal_enc);
 
 		// we want only the effects of moving one of the terms, and since we have to mill through
@@ -309,7 +309,7 @@ int main()
 		//brute force attempt to find what values make the terms to be moved 0
 		for(int64_t i = 1; i < 256; ++i)
 		{
-			fixed_enc = rs16_encode(raw | (i << to_move_bits), chk_syms);
+			fixed_enc = rs16_encode_systematic(raw | (i << to_move_bits), chk_syms);
 			if(!(fixed_enc & to_move_mask))
 				break;
 		}
@@ -332,7 +332,7 @@ int main()
 	for(int64_t j = 1; j < 256; ++j)
 	{
 		raw = j << (2 * GF16_SYM_SZ);
-		normal_enc = rs16_encode(raw, chk_syms);
+		normal_enc = rs16_encode_systematic(raw, chk_syms);
 
 		// we want only the effects of moving one of the terms, and since we have to mill through
 		//  the posibilites, it might as well be one that doesn't require scaling. If it's not 
@@ -342,7 +342,7 @@ int main()
 		//brute force attempt to find what values make the terms to be moved 0
 		for(int64_t i = 1; i < 256; ++i)
 		{
-			fixed_enc = rs16_encode(raw | i, chk_syms);
+			fixed_enc = rs16_encode_systematic(raw | i, chk_syms);
 			if(!(fixed_enc & to_move_mask))
 				break;
 		}
