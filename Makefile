@@ -2,7 +2,7 @@ MAKEFLAGS += --no-builtin-rules  #black magic removal
 # Note: 
 # If the .d (dependency) files are manually removed the dependencies for include files will not
 # get picked up unless there is a change in the .c file or until the next "make clean" is executed.
-CFLAGS += -g -O0 -Wall -Wextra -Werror -Wno-shift-negative-value
+CFLAGS += -g -O0 -Wall -Wextra -Werror -Wno-shift-negative-value -Wno-error=implicit-fallthrough
 
 MODULE_DIR := submodules/Tiny_ECC/ReedSolomon/
 MODULE_SRC_DIR := $(MODULE_DIR)src/
@@ -66,6 +66,7 @@ gen_cw_to_id_k3_k4_LUT:
 gen_tags:
 rs_codeword_test:
 test_ids:
+layout_maker:
 
 
 $(BUILD_TARGET) :$(OBJECTS) $(TARGET_OBJ) $(MODULE_OBJECTS)	# This will drive the creation of the .o files in the OBJdir for the prerequisites 
