@@ -32,10 +32,10 @@ the Reed-Solomon error correction scheme.\n\
 	PRESS ENTER TO CONTINUE\n"
 
 #define HEXAGON_GRID_HEADER "\n\n\n\n\
-        1               Ex: :44#0   ___   (!@#$%%):  symbol indicator\n\
-    0   |   2           Legend:    /#0#\\   (0123):  bit ID\n\
-1   |`*.|   |   3                  \\_a_/    (abc):  third differentiator\n\
- `*.|   |`*.|  _|_  4\n"
+        1               Input Example      0\n\
+    0   |   2           >:03#1         3  _|_    (!@#$%%):  symbol indicator\n\
+1   |`*.|   |   3       Legend:         `/#1#\\    (0123):  bit ID\n\
+ `*.|   |`*.|  _|_  4                    \\_a_/     (abc):  third differentiator\n"
 #define HEXAGON_GRID "\
 2   |`*.|  _|_/   \\_|_  5              \n\
  `*.|  _|_/   \\___/   \\_|_  6          \n\
@@ -55,6 +55,9 @@ the Reed-Solomon error correction scheme.\n\
       \\___/   \\___/   \\___/            \n\
           \\___/   \\___/                \n\
               \\___/\n"
+
+// mask to divide the occupancy vector in half such that each half corresponds to a sixth of the grid
+#define OCC_DIV 0b1001101111111
 
 char ui[] = HEXAGON_GRID;
 uint8_t bit_x[20];	// index represents the symbol number in the hi bits and the bit number in the low bits
@@ -121,19 +124,14 @@ void update_ui_occupancy(uint8_t x, uint8_t y, char symbol, char bit_id)
 	}
 }
 
-union bytes_2
+int8_t get_svg_x(uint8_t x, uint8_t y)
 {
-	uint16_t i;
-	int8_t b[2];
-};
+	return 11 - 2 * y - x;
+}
 
-union bytes_2 get_svg_coords(uint8_t x, uint8_t y)
+int8_t get_svg_y(uint8_t x)
 {
-	union bytes_2 coords;
-	coords.b[0] = 3 * x - 11;
-	coords.b[1] = 2 * y + x - 11;
-
-	return coords;
+	return 3 * x - 11;
 }
 
 int write_layout()	// returns 1 if invalid
@@ -161,6 +159,11 @@ int write_layout()	// returns 1 if invalid
 		return 1;
 	}
 
+	// used to ensure that the wider "heavier" side of the bit arrangement is the bottom
+	int8_t sixth_inner = __builtin_popcount(occupancy & OCC_DIV);
+	int8_t sixth_outer = __builtin_popcount(occupancy & ~OCC_DIV);
+	int8_t heavyside = (sixth_inner >= sixth_outer) ? 1 : -1;
+
 	int8_t s = 0;
 	printf("\nint8_t layout[%i][4][3][2] = {", sym_count);
 	// iterate over the symbols, which may not be contiguous and, construct a contiguous version in
@@ -179,11 +182,14 @@ int write_layout()	// returns 1 if invalid
 		
 		uint8_t y = bit_y[i];
 		uint8_t z = get_3rd_coord(x, y);
-		union bytes_2 xy0, xy1, xy2;
-		xy0 = get_svg_coords(x, y);
-		xy1 = get_svg_coords(y, z);
-		xy2 = get_svg_coords(z, x);
-		printf("\n    { {%3i,%3i}, {%3i,%3i}, {%3i,%3i} },", xy0.b[0], xy0.b[1], xy1.b[0], xy1.b[1], xy2.b[0], xy2.b[1]);
+		int8_t x0, y0, x1, y1, x2, y2;
+		x0 = get_svg_x(x, y);
+		x1 = get_svg_x(y, z);
+		x2 = get_svg_x(z, x);
+		y0 = get_svg_y(x) * heavyside;
+		y1 = get_svg_y(y) * heavyside;
+		y2 = get_svg_y(z) * heavyside;
+		printf("\n    { {%3i,%3i}, {%3i,%3i}, {%3i,%3i} },", x0, y0, x1, y1, x2, y2);
 		
 		if(i % 4 == 3)	// symbol boundary comment
 			printf("\b  },");
@@ -317,6 +323,7 @@ int main()
 		printf(HEXAGON_GRID_HEADER);
 		printf(ui);
 		printf(feedback);
+		putchar('>');
 		feedback = "Enter 'h' for help.\n";
 
 		// handle input and updating of the ui string
