@@ -8,8 +8,10 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define HELP_STRING "\
-Commands are as follows, with capital letters representing variables:\n\
+#define HELP_STRING "\n\
+COMMANDS:\n\
+Commands are as follows, with capital letters representing variable values:\n\
+\n\
 :XYSB  - Set cell at column X, diagonal row Y to bit B of symbol S. Will fail\n\
        if out of bounds, SB was already used, or cell XY already occupied\n\
        Ex: :03@2\n\
@@ -29,13 +31,13 @@ Layouts such that bits within a symbol are recommended for best occlusion\n\
 performance as occlusions are modeled as burst errors/erasures in the terms of\n\
 the Reed-Solomon error correction scheme.\n\
 \n\
-	PRESS ENTER TO CONTINUE\n"
+	PRESS ENTER TO CONTINUE"
 
 #define HEXAGON_GRID_HEADER "\n\n\n\n\
         1               Input Example      0\n\
-    0   |   2           >:03#1         3  _|_    (!@#$%%):  symbol indicator\n\
+    0   |   2           >:03#1         3  _|_    (!@#$%):  symbol indicator\n\
 1   |`*.|   |   3       Legend:         `/#1#\\    (0123):  bit ID\n\
- `*.|   |`*.|  _|_  4                    \\_a_/     (abc):  third differentiator\n"
+ `*.|   |`*.|  _|_  4                    \\_a_/     (abc):  third differentiator"
 #define HEXAGON_GRID "\
 2   |`*.|  _|_/   \\_|_  5              \n\
  `*.|  _|_/   \\___/   \\_|_  6          \n\
@@ -69,7 +71,7 @@ uint32_t occupancy= 0;
 // feedback string gets printed on the next print of the ui, this means that it won't appear in the middle
 //  of parsing a string and only the last occuring error will print but it's a tiny utility program and I
 //  wanted to keep the ability to chain instructions indefinitely.
-const char* feedback = "Specify column, row, symbol, and bit id. Enter 'h' for help.\n";
+const char* feedback = "Specify column, row, symbol, and bit id. Enter 'h' for help.";
 
 int get_str_pos(uint8_t x, uint8_t y) // calculates the position in the string that the cell is at
 {
@@ -155,14 +157,14 @@ int write_layout()	// returns 1 if invalid
 	int8_t sym_count = __builtin_popcount(syms_found);
 	if(sym_count*4 != bit_count)
 	{
-		feedback = "Layout is invalid, some symbol(s) are missing bits.\n";
+		feedback = "Layout is invalid, some symbol(s) are missing bits.";
 		return 1;
 	}
 
 	// used to ensure that the wider "heavier" side of the bit arrangement is the bottom
 	int8_t sixth_inner = __builtin_popcount(occupancy & OCC_DIV);
 	int8_t sixth_outer = __builtin_popcount(occupancy & ~OCC_DIV);
-	int8_t heavyside = (sixth_inner >= sixth_outer) ? 1 : -1;
+	int8_t heavyside = (sixth_inner > sixth_outer) ? 1 : -1;
 
 	int8_t s = 0;
 	printf("\nint8_t layout[%i][4][3][2] = {", sym_count);
@@ -183,18 +185,18 @@ int write_layout()	// returns 1 if invalid
 		uint8_t y = bit_y[i];
 		uint8_t z = get_3rd_coord(x, y);
 		int8_t x0, y0, x1, y1, x2, y2;
-		x0 = get_svg_x(x, y);
-		x1 = get_svg_x(y, z);
-		x2 = get_svg_x(z, x);
+		x0 = get_svg_x(x, y) * heavyside;	// if the "heavy" side of the marker would be negative in x, rotate 180 deg
+		x1 = get_svg_x(y, z) * heavyside;
+		x2 = get_svg_x(z, x) * heavyside;
 		y0 = get_svg_y(x) * heavyside;
 		y1 = get_svg_y(y) * heavyside;
 		y2 = get_svg_y(z) * heavyside;
 		printf("\n    { {%3i,%3i}, {%3i,%3i}, {%3i,%3i} },", x0, y0, x1, y1, x2, y2);
 		
 		if(i % 4 == 3)	// symbol boundary comment
-			printf("\b  },");
+			printf("\b  },");	//can't be puts() because it will automatically add a newline that can't be removed
 	}
-	printf("\b \n};");
+	puts("\b \n};\n");
 
 	return 0;
 }
@@ -215,7 +217,7 @@ void read_option()
 			x = in - '0';
 			if(x > 8)
 			{
-				feedback = "Invalid column number.\n";
+				feedback = "Invalid column number.";
 				break;
 			}
 
@@ -224,13 +226,13 @@ void read_option()
 			y = in - '0';
 			if(y > 8)
 			{
-				feedback = "Invalid row number.\n";
+				feedback = "Invalid row number.";
 				break;
 			}
 			
 			if((x + y < 3) || (x + y > 11))	//check upper left and lower right bounds
 			{
-				feedback = "Invalid column + row combination.\n";
+				feedback = "Invalid column + row combination.";
 				break;
 			}
 			
@@ -240,7 +242,7 @@ void read_option()
 			symbol = in;
 			if((in - '!' > 4  && in != '@') || in == '"')	// check if valid symbol indicator input
 			{
-				feedback = "Invalid symbol indicator.\n";
+				feedback = "Invalid symbol indicator.";
 				break;
 			}
 
@@ -249,7 +251,7 @@ void read_option()
 			bit_id = in;
 			if(in - '0' > 3)	// check bit id was 0 through 3
 			{
-				feedback = "Invalid bit ID.\n";
+				feedback = "Invalid bit ID.";
 				break;
 			}
 
@@ -263,13 +265,13 @@ void read_option()
 			{
 				if(bit_x[idx] <= 11)	// using already placed bits isn't allowed w/o first clearing them
 				{
-					feedback = "Symbol + bit combination already in use.\n";
+					feedback = "Symbol + bit combination already in use.";
 					break;
 				}
 				
 				if(is_cell_occupied(x, y))	// setting already occupied cells isn't allowed w/o first clearing them
 				{
-					feedback = "Specified cell is already occupied.\n";
+					feedback = "Specified cell is already occupied.";
 					break;
 				}
 				
@@ -283,7 +285,7 @@ void read_option()
 				y = bit_y[idx];
 				if(x > 11)
 				{
-					feedback = "Symbol + bit not currently assigned.\n";
+					feedback = "Symbol + bit not currently assigned.";
 					break;
 				}
 
@@ -297,7 +299,7 @@ void read_option()
 
 			break;
 		case 'h':	// help
-			printf(HELP_STRING);
+			puts(HELP_STRING);
 			while(getchar() != '\n');	// eat any remaining input until newline
 			
 			in = 0;	// then wait for enter to be pressed again, (a command can be entered with help open)
@@ -320,11 +322,11 @@ int main()
 	memset(bit_x, -1, 20);	// initialize x-coords to an invailid value
 	while(1)
 	{
-		printf(HEXAGON_GRID_HEADER);
-		printf(ui);
-		printf(feedback);
+		puts(HEXAGON_GRID_HEADER);
+		puts(ui);
+		puts(feedback);
 		putchar('>');
-		feedback = "Enter 'h' for help.\n";
+		feedback = "Enter 'h' for help.";
 
 		// handle input and updating of the ui string
 		read_option();
