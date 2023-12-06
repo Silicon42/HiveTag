@@ -154,8 +154,8 @@ int write_layout()	// returns 1 if invalid
 	if(!syms_found)	// empty layout, assumes the user meant to quit
 		return 0;
 
-	int8_t sym_count = __builtin_popcount(syms_found);
-	if(sym_count*4 != bit_count)
+	int8_t nDiv3 = __builtin_popcount(syms_found);
+	if(nDiv3*4 != bit_count)
 	{
 		feedback = "Layout is invalid, some symbol(s) are missing bits.";
 		return 1;
@@ -165,38 +165,45 @@ int write_layout()	// returns 1 if invalid
 	int8_t sixth_inner = __builtin_popcount(occupancy & OCC_DIV);
 	int8_t sixth_outer = __builtin_popcount(occupancy & ~OCC_DIV);
 	int8_t heavyside = (sixth_inner > sixth_outer) ? 1 : -1;
-
-	int8_t s = 0;
-	printf("\nint8_t layout[%i][4][3][2] = {", sym_count);
-	// iterate over the symbols, which may not be contiguous and, construct a contiguous version in
-	//  the stretched integer aligned coordinate system that the svgs use for compact storage.
+	
+	// construct the svg coordinates in an array so that they are contiguous and symbols are spaced
+	//  proportionally to how they occur in the Reed-Solomon view
+	int8_t svgx[60], svgy[60];
+	bit_count = 0;
 	for(int i = 0; i < 20; ++i)
 	{
-		uint8_t x = bit_x[i];
+		uint8_t x, y, z;
+		x = bit_x[i];
 		if(x > 11)	//skip empty bits
 			continue;
 		
-		if(i % 4 == 0)	// symbol boundary comment
-		{
-			printf("\n  {// [%i][0][_]  [%i][1][_]  [%i][2][_]", s, s, s);
-			++s;
-		}
-		
-		uint8_t y = bit_y[i];
-		uint8_t z = get_3rd_coord(x, y);
-		int8_t x0, y0, x1, y1, x2, y2;
-		x0 = get_svg_x(x, y) * heavyside;	// if the "heavy" side of the marker would be negative in x, rotate 180 deg
-		x1 = get_svg_x(y, z) * heavyside;
-		x2 = get_svg_x(z, x) * heavyside;
-		y0 = get_svg_y(x) * heavyside;
-		y1 = get_svg_y(y) * heavyside;
-		y2 = get_svg_y(z) * heavyside;
-		printf("\n    { {%3i,%3i}, {%3i,%3i}, {%3i,%3i} },", x0, y0, x1, y1, x2, y2);
-		
-		if(i % 4 == 3)	// symbol boundary comment
-			printf("\b  },");	//can't be puts() because it will automatically add a newline that can't be removed
+		y = bit_y[i];
+		z = get_3rd_coord(x, y);
+		svgx[bit_count]     = get_svg_x(x, y) * heavyside;	// if the "heavy" side of the marker would be negative in x, rotate 180 deg
+		svgx[bit_count + 20]= get_svg_x(y, z) * heavyside;
+		svgx[bit_count + 40]= get_svg_x(z, x) * heavyside;
+		svgy[bit_count]     = get_svg_y(x) * heavyside;
+		svgy[bit_count + 20]= get_svg_y(y) * heavyside;
+		svgy[bit_count + 40]= get_svg_y(z) * heavyside;
+		++bit_count;
 	}
-	puts("\b \n};\n");
+
+	// print the formatted array for easy copy pasting of the layout
+	// indices of the printed array correspond to bit number in the contracted view
+	printf("\nconst struct int8_2D bits[] = {");
+	for(int i = 0; i < 3; ++i)
+	{
+		printf("\n    //third %i", i);
+		int8_t i_off = i * 20;
+		for(int j = 0; j < nDiv3; ++j)
+		{
+			int8_t j_off = j * 4;
+			printf("\n    ");
+			for(int k = 0; k < 4; ++k)
+				printf("{%2i,%3i}, ", svgx[k + j_off + i_off], svgy[k + j_off + i_off]);
+		}
+	}
+	puts("\b\b \n};\n");
 
 	return 0;
 }

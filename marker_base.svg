@@ -1,4 +1,6 @@
-<svg viewBox="-2 -2 4 4" xmlns="http://www.w3.org/2000/svg">
+<!-- adding a semi-transparent fill to the svg tag helps show how the svg is put together
+sincce it makes some hidden parts visible -->
+<svg viewBox="-2 -2 4 4" xmlns="http://www.w3.org/2000/svg" fill="#000A">
 	<defs><!-- Hexagon and "Circle" used later, the group they're in has a transform
 	so they can use mostly integer coordinates, cutting the total number of bytes
 	down significantly when it comes to potentially having thousands or more of these -->
@@ -19,14 +21,14 @@
 	</defs>
 	<!-- we punch all of the white regions out of the circle using this mask in order to
 	keep the default color un-assigned and thus stylable and allow whatever background
-	color is behind it to show through this should allow for easy inverting to double
+	color is behind it to show through. This should allow for easy inverting to double
 	your marker count if you ever have just not quite enough markers or some fancy color
 	layering of multiple markers if you trust your camera's color accuracy and the
 	lighting enough, however that could lead to inefficiencies and errors in decoding
 	if not handled well, hence why I haven't implemented it -->
 	<mask id="M">
 		<!-- this allows the default circle to show through, in most examples this would
-		be a rectangle but this is circular already and is shorter -->
+		be a rectangle but this is circular already and is shorter in terms of characters -->
 		<circle r="2" fill="#FFF"/>
 		<!-- compound scaling factor, that handles both the width scaling by 1.15470054
 		and the overall scaling by 0.2 that is specific to the n=3 marker size. This
@@ -36,13 +38,14 @@
 			<!-- the alignment triangle, must be sized for a given n value due to transrom -->
 			<polygon points="0,10 -5,-5 5,-5"/>
 			<!-- gap filler polygon that handles what would be black hairline gaps from
-			portions of the data region that go beyond the bacground of the alignment
+			portions of the data region that go beyond the background of the alignment
 			triangle. Is dependent on the marker size but is not neccessary for cutter
 			versions as the gaps are already masked by the stroke lines -->
 			<polygon points="0,-6 -3,3 3,3"/>
 			<!-- start of the data region, clear bits come first. If it's a cutter
 			version, then all set bits are changed to using hexagons instead of circles
-			and get wrapped in a group tag to set fill="#FFF" across all of them. -->
+			and get wrapped in a group tag to set fill="#FFF" across all of them to save
+			on average character count -->
 			<use href="#C" x="-1" y="-5"/>
 			<use href="#C" x="1" y="-5"/>
 			<use href="#C" y="-2"/><!-- 0 values can be ommitted as that's default behavior-->
@@ -60,10 +63,10 @@
 			<!-- this punches off any black from the circles that extends out of the data
 			region. It's done by redrawing the corners because masking the data region
 			would lead to white hairline edges on black hexagons that extend past the 
-			alignment triangle. It's not neccessary for cutter versions-->
+			interior of the alignment triangle. It's not neccessary for cutter versions -->
 			<g id="R">
 				<!-- small savings by only defining half the points and reflecting, which
-				doesn't work for n=6 since that size has a chiral outline benefit is so
+				doesn't work for n=6 since that size has a chiral outline. Benefit is so
 				miniscule I'm considering removing the reflection and just defining all 3
 				polygons -->
 				<polygon points="0,10 0,6 1,5 1.5,5.5"/>
