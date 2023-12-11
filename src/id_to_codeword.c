@@ -10,9 +10,15 @@
 //  added to the rotationally independent region it would replace the one that would be the orientation
 //  determiner, but wouldn't have the corresponding basis component.
 
-//TODO: Consider where to put non-orientable codewords in terms of ID numbers and how to handle them.
-//  Currently they are just assumed to be illegal and thus have no valid ID assigned but they need an ID
-//  to be properly rejectable if something gets mis-corrected to one of them in the error-correction step
+//NOTE: IDs could be restructured as combinations of 2 separate numbers where one would be a "family" number
+//  such that a family corresponds to a lower k value code with the rotation independent component used as a
+//  mask, this would allow one to have significantly better error correction if you knew that the marker being
+//  identified belonged to a specific family and range, as good as if you were using the lower k value, and if
+//  for example multiple users agreed to use different families ahead of time, both could later be used together
+//  in exchange for the otherwise improved error correction, however this will likely not be implemented anytime
+//  soon since it would require an overhaul of how IDs are represented, since they wouldn't be as easy to
+//  consider as a single contiguous set of numbers and the non-orientable codes would have to be moved to the
+//  bottom of the range to work correctly and 1 indexing the IDs definitely wouldn't work that way
 
 #include "gf16.h"
 #include "ht_math_defs.h"

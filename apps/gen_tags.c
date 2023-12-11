@@ -1,153 +1,141 @@
+#include "id_to_codeword.h"
+#include "tag_layouts.h"
+#include "cw_utils.h"
 #include <stdio.h>
-#include "gf16.h"
+#include <string.h>
 
-#define MARKER_SVG_HEADER \
-"<svg viewBox=\"-2 -2 4 4\" xmlns=\"http://www.w3.org/2000/svg\">"\
+#define SVG_TAG_HEADER \
+"<svg viewBox=\"-4 -4 8 8\" xmlns=\"http://www.w3.org/2000/svg\">"\
 	"<defs>"\
 		"<polygon points=\"0,2 -1,1 -1,-1 0,-2 1,-1 1,1\" id=\"H\"/>"\
 		"<ellipse id=\"C\" rx=\"1.15470054\" ry=\"2\" fill=\"#FFF\"/>"\
 	"</defs>"\
+	"<mask id=\"E\" fill=\"#FFF\">"
+#define SVG_POLYGON \
+		"<polygon points=\""
+#define SVG_CLOSE_POLYGON "\"/>"
+#define SVG_BITS_MIRROR " id=\"R\"/>"\
+		"<use href=\"#R\" transform=\"scale(-1,1)\"/>"
+#define SVG_MASK_HEADER \
+	"</mask>"\
 	"<mask id=\"M\">"\
-		"<circle r=\"2\" fill=\"#FFF\"/>"\
-		"<g transform=\"scale(.346410162 .2)\">"\
-			"<polygon points=\"0,10 -5,-5 5,-5\"/>"\
-			"<polygon points=\"0,-6 -3,3 3,3\"/>"
-
-//#define HEXAGON_INT "-1,1 -1,-1 0,-2 1,-1 1,1"
-//#define HEXAGON_FLOAT "-1.73205081,1 -1.73205081,-1 0,-2 1.73205081,-1 1.73205081,1\" transform=\"scale(.577350269 1)\" stroke"
-#define USE_SVG_BIT \
-			"<use href=\"#%c\" x=\"%i\" y=\"%i\"/>"
-#define MARKER_SVG_FOOTER \
-			"<g id=\"R\">"\
-				"<polygon points=\"0,10 0,6 1,5 1.5,5.5\"/>"\
-				"<polygon points=\"5,-5 2,-5 2,-4 3,-3 3,-1 3.5,-.5\"/>"\
-			"</g>"\
-			"<use href=\"#R\" transform=\"scale(-1, 1)\"/>"\
+		"<circle r=\"4\" fill=\"#FFF\"/>"\
+		"<polygon points=\"0,4 -3.46410162,-2 3.46410162,-2\"/>"\
+		"<g mask=\"url(#E)\" transform=\""
+#define SVG_ROTATION					"rotate(%i)"
+#define SVG_BITS_SCALE					"scale(%s,%s)\">"
+// SVG_POLYGON re-used for bg_fill here
+#define SVG_USE_BIT \
+			"<use href=\"#%c\"%s y=\"%i\"/>"
+#define SVG_X_STR " x=\"%i\""
+#define TAG_SVG_FOOTER \
 		"</g>"\
 	"</mask>"\
-	"<circle r=\"2\" mask=\"url(#M)\"/>"\
+	"<circle r=\"4\" mask=\"url(#M)\"/>"\
 "</svg>"
 
-	// I wanted to have the program read the base svg from a file but from the below and how much time I spent
-	//  writing it, that seems to be too much added complexity compared to just including it as a string literal
-	/*
-	FILE* marker_fp = fopen(MARKER_BASE_SVG, "r");
-	if (marker_fp == NULL)
+// copies a c string literal to the buffer location and advances the pointer to the copied null char
+#define SPUTS_LIT(buf_ptr, str_lit) \
+{\
+	memcpy(buf_ptr, str_lit, sizeof(str_lit));\
+	buf_ptr += sizeof(str_lit) - 1;\
+}
+
+// returns pointer to postion of the end of the string written
+char* write_polygon(char* buf, const struct int8_2D* points, int8_t size)
+{
+	SPUTS_LIT(buf, SVG_POLYGON);
+	for(int i = 0; i < size; ++i)
+		buf += sprintf(buf, "%i,%i ", points[i].x, points[i].y);
+	// TODO: remove use of backspaces here, currently used just to experiment but could easily be replaced
+	//  by moving pointer back and is likely more understandable
+	--buf;
+	SPUTS_LIT(buf, SVG_CLOSE_POLYGON);
+
+	return buf;
+}
+
+void write_bits(FILE* marker_fp, gf16_poly codeword, const struct int8_2D* bits, int8_t bit_cnt, char element_id)
+{
+	for(uint8_t bit = 0; bit < bit_cnt; ++bit)
 	{
-		perror("Couldn't open " MARKER_BASE_SVG ". Is it missing?\n");
-		return 1;
-	}
-	
-	char marker_base[1024] = {0};
-	// read the whole marker base into a c string
-	size_t read = fread(marker_base, 1, sizeof(marker_base) - 34, marker_fp);	//34 is the number of decimal characters to fully specify 2 doubles
-	if (!feof(marker_fp))	// if we didn't reach the end of the file,
-	{
-		if (ferror(marker_fp))	// then an error occured while reading it
+		if(codeword & 1)
 		{
-			perror("Error while reading " MARKER_BASE_SVG ".\n");
-			fclose(marker_fp);
-			return 2;
+			char x_str[8];
+			if(bits[bit].x)
+				sprintf(x_str, SVG_X_STR, bits[bit].x);
+			else
+				x_str[0] = '\0';
+			fprintf(marker_fp, SVG_USE_BIT, element_id, x_str, bits[bit].y);
 		}
-		// or the file was too long to fit in the buffer, this shouldn't happen unless marker_base.svg is modified
-		perror(MARKER_BASE_SVG " was too long. Recompile with a larger buffer and try again.\n");
-		fclose(marker_fp);
-		return 3;
+		codeword >>= 1;
 	}
-	fclose(marker_fp);
-
-	// find the start of the footer section
-	int footer_i;
-	do
-	{
-		// seek backward from file end to find the last closing g tag "</g>" candidate
-		//  8 is the minimum number of characters the 'g' could be from the end of a valid svg file
-		for (footer_i = read - 8; marker_base[footer_i] != 'g'; --footer_i);
-		footer_i -= 2;
-	} while (strncmp(&marker_base[footer_i], "</g>", 4));	// check that it actually is a closing "</g>"
-	// continue seeking backward to the next newline
-	for (--footer_i; marker_base[footer_i] != '\n'; --footer_i);
-	++footer_i;
-
-	int footer_len = footer_i - read;
-	for(int i = 0; i >= 0; ++i)
-	{
-		marker_base[sizeof(marker_base) - j]
-	}
-	*/
-	/*
-	int8_t syms_per_third = 1;	// valid values are 1 thru 5, and values outside get limited to this range
-	int8_t mode = 1;	// shingled mode == 0, standard == 1 thru 14 capped to syms_per_third symbols if syms_per_third < 5
-	gf16_poly pad = 0;	// what to place into the un-transmitted code region, anything that would extend past the remaining symbols in a third is discarded
-	//TODO: padding content seems to not effect encoding values so this variable can probably be removed
-
-	//input range protection logic
-	syms_per_third = (syms_per_third < 1) ? 1 : syms_per_third;	//input protection lower bound
-	if(syms_per_third < 5)
-		mode = (mode > syms_per_third) ? syms_per_third : mode;	// cap mode to syms_per_third if syms_per_third != 5
-	else
-	{
-		syms_per_third = 5;	//input protection upper bound
-		mode = (mode > 14) ? 14 : mode;	// cap mode to 14 check symbols, 1 data symbol
-	}
-
-	gf16_idx bits_per_third = GF16_SYM_SZ * syms_per_third;
-	pad &= THIRD_MASK >> bits_per_third;	//only keep enough to pad the untransmitted portion
-
-	if(mode != 0)	// shingled mode doesn't get repeated padding
-		pad |= (pad << THIRD_SIZE) | (pad << (2 * THIRD_SIZE));
-
-	// NOTE: everything beyond this point assumes mode != 0 for now, WIP
-	uint32_t third_tx_mask = ~(-1L << bits_per_third);
-	int8_t data_syms = 3 * syms_per_third - mode;
-	uint64_t limit = GF16_MAX + 1;
-	for(int i = 1; i < data_syms; ++i)
-		limit *= limit;
-	// the number of codewords has the potential to be huge and size isn't known at compile time so it must be
-	//  malloc'd on the heap
-	//gf16_poly* codewords = malloc(limit*sizeof(gf16_poly));
-	//memset(codewords, -1, limit*sizeof(gf16_poly));	//init to invalid data to easily differentiate set values
-*/
+}
 
 int main()
 {
-	const int8_t bit_y_coord[] = {-5, -5, -2, -2, 1, 4, 1, 4, 4, 1, 1, -2};
-	const int8_t bit_x_coord[] = {-1, 1, 0, 2, 3, 2, 1, 0, -2, -3, -1, -2};
+	// copy pasted input parsing from rs_codeword_test since this isn't meant to be a final solution
+	//TODO: implement HTML/JavaScript version that is interactive and allows the whole generation, sizing, page
+	//  layout, and printing process to be done in a browser with option to export to a file for user convenience
+	int nDiv3;
 
-	for(gf16_elem i = 0; i < 5; ++i)
+	while(1)
 	{
-		uint16_t cw_base = gf16_exp[i+10];
-		cw_base <<= GF16_SYM_SZ;
-		cw_base |= gf16_exp[i+5];
-		cw_base <<= GF16_SYM_SZ;
-		cw_base |= gf16_exp[i];
-		uint8_t id_base = i << GF16_SYM_SZ;
-		
-		for(gf16_elem j = 0; j <= GF16_MAX; ++j)
-		{
-			uint16_t codeword = cw_base ^ (j * 0x111);
-			uint8_t id = id_base | j;
-			printf("ID: %02X	CW: %03X\n", id, codeword);
-			char filename[32];
-			sprintf(filename, "markers/n3_k2_id%02X.svg", id);
+		printf("Select a valid 'n/3' value (1 <= n <= 5): ");
+		nDiv3 = getchar();
+		getchar();	// eat the '\n'
+		nDiv3 -= '0';
+		if(1 <= nDiv3 && nDiv3 <= 5)
+			break;
+	}
 
-			uint16_t cw_copy = codeword;
-			FILE* marker_fp = fopen(filename, "w");
-			fprintf(marker_fp, MARKER_SVG_HEADER);
-			for(uint16_t bit = 0; bit < 12; ++bit)
-			{
-				if(~cw_copy & 1)
-					fprintf(marker_fp, USE_SVG_BIT, 'C', bit_x_coord[bit], bit_y_coord[bit]);
-				cw_copy >>= 1;
-			}
-			for(uint16_t bit = 0; bit < 12; ++bit)
-			{
-				if(codeword & 1)
-					fprintf(marker_fp, USE_SVG_BIT, 'H', bit_x_coord[bit], bit_y_coord[bit]);
-				codeword >>= 1;
-			}
-			fprintf(marker_fp, MARKER_SVG_FOOTER);
-			fclose(marker_fp);
-		}
+	//TODO: currently assumes k == 2 and generates the whole marker range, javascript implementation will
+	//  need a start id and a range
+	int8_t bit_cnt = nDiv3 * 3 * GF16_SYM_SZ;
+	const struct layout lo = default_layouts[nDiv3 - 1];
+
+	char svg_header[1024];
+	char* buf_pos = svg_header;	// end of the string/where to add on more
+	SPUTS_LIT(buf_pos, SVG_TAG_HEADER);
+	buf_pos = write_polygon(buf_pos, lo.bits_mask, lo.bits_mask_len);
+	if(lo.is_bits_mask_mirrored)
+	{
+		buf_pos -= 2;	// needs to overwrite the last 2 chars
+		SPUTS_LIT(buf_pos, SVG_BITS_MIRROR);
+	}
+
+	SPUTS_LIT(buf_pos, SVG_MASK_HEADER);
+
+	// if a rotation is involved with the layout, then the alignment triangle must be drawn separately since it
+	//  isn't supposed to be one of the parts rotated, at which point it's more space efficient to specify it
+	//  in the un-scaled coordinate system
+	if(lo.rotate)
+		buf_pos += sprintf(buf_pos, SVG_ROTATION, lo.rotate);
+
+	char x_scale[12], y_scale[12];	// printf has no way to omit the leading 0 so print to a string first
+	sprintf(x_scale, "%.9g", SQRT_3*4.0/lo.scale_div);
+	sprintf(y_scale, "%.9g", 4.0/lo.scale_div);
+	buf_pos += sprintf(buf_pos, SVG_BITS_SCALE, x_scale + 1, y_scale + 1);
+	
+	buf_pos = write_polygon(buf_pos, lo.bg_fill, lo.bg_fill_len);
+	
+	for(gf16_elem i = 1; i <= 96; ++i)
+	{
+		gf16_poly codeword = id_to_codeword(i, nDiv3, 2);
+		codeword = contract_cw(codeword, nDiv3);
+		
+		char filename[32];
+		sprintf(filename, "markers/n%i/k2/n%i_k2_id%02i.svg", nDiv3*3, nDiv3*3, i);
+		FILE* marker_fp = fopen(filename, "w");
+
+		fprintf(marker_fp, svg_header);
+		// write the clear, (circular) bits
+		write_bits(marker_fp, ~codeword, lo.bits, bit_cnt, 'C');
+		// write the set, (hexagonal) bits
+		write_bits(marker_fp, codeword, lo.bits, bit_cnt, 'H');
+
+		fprintf(marker_fp, TAG_SVG_FOOTER);
+
+		fclose(marker_fp);
 	}
 }

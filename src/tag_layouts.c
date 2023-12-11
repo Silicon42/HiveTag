@@ -18,13 +18,24 @@ const struct int8_2D bits1[] = {
 	{-2, -2}, {-1, -5}, { 0, -2}, { 1, -5}
 };
 
-const struct int8_2D bg_mask1[] = {
-	{-3, 3}, {0, -6}, {3, 3}
+const struct int8_2D bg_fill1[] = {
+	{0, -6}, {-3, 3}, {3, 3}
 };
 
-const struct int8_2D fg_mask1_1[] = {
-	{-3, 3}, {0, -6}, {3, 3}
+const struct int8_2D bits_mask1[] = {
+	{-1,0}, {0,6}, {1,5}, {2,6}, {4,4}, {4,2}, {4,0}, {3,-1}, {3,-3}, {2,-4}, {2,-6}, {0,-8}
 };
+
+#define DEFAULT_LAYOUT1 {\
+	.bits = bits1,\
+	.bg_fill = bg_fill1,\
+	.bg_fill_len = 3,\
+	.bits_mask = bits_mask1,\
+	.bits_mask_len = 12,\
+	.is_bits_mask_mirrored = 1,\
+	.scale_div = 10,\
+	.rotate = 0\
+}
 
 // :63!0:64!1:54!2:55!3 :44@0:45@1:35@2:36@3
 const struct int8_2D bits2[] = {
@@ -38,6 +49,25 @@ const struct int8_2D bits2[] = {
 	{-3, -5}, {-2, -8}, {-1, -5}, { 0, -8},
 	{ 0, -2}, { 1, -5}, { 2, -2}, { 3, -5}
 };
+
+const struct int8_2D bg_fill2[] = {
+	{0, -6}
+};
+
+const struct int8_2D bits_mask2[] = {
+	{-1,0}, {0,6}, {1,5}, {2,6}, {4,4}, {4,2}, {4,0}, {3,-1}, {3,-3}, {2,-4}, {2,-6}, {0,-8}
+};
+
+#define DEFAULT_LAYOUT2 {\
+	.bits = bits2,\
+	.bg_fill = bg_fill2,\
+	.bg_fill_len = 6,\
+	.bits_mask = bits_mask2,\
+	.bits_mask_len = 12,\
+	.is_bits_mask_mirrored = 1,\
+	.scale_div = 13,\
+	.rotate = 5\
+}
 
 // :34!0:24!1:25!2:15!3 :14@0:13@1:23@2:22@3 :33#0:32#1:31#2:41#3
 const struct int8_2D bits3[] = {
@@ -54,6 +84,25 @@ const struct int8_2D bits3[] = {
 	{-3, -7}, {-2,-10}, {-1, -7}, { 0,-10},
 	{ 0, -4}, { 1, -7}, { 2,-10}, { 3, -7}
 };
+
+const struct int8_2D bg_fill3[] = {
+	{7,-1},{1, -11},{-1, -11},{-7,-1},
+};
+
+const struct int8_2D bits_mask3[] = {
+	{-1,0}, {0,6}, {1,5}, {2,6}, {4,4}, {4,2}, {4,0}, {3,-1}, {3,-3}, {2,-4}, {2,-6}, {0,-8}
+};
+
+#define DEFAULT_LAYOUT3 {\
+	.bits = bits3,\
+	.bg_fill = bg_fill3,\
+	.bg_fill_len = 6,\
+	.bits_mask = bits_mask3,\
+	.bits_mask_len = 12,\
+	.is_bits_mask_mirrored = 1,\
+	.scale_div = 15,\
+	.rotate = 5\
+}
 
 // :34!0:24!1:25!2:15!3 :16@0:06@1:17@2:07@3 :26#0:35#1:27#2:36#3 :37$0:46$1:47$2:56$3
 const struct int8_2D bits4[] = {
@@ -73,6 +122,25 @@ const struct int8_2D bits4[] = {
 	{ 4, -2}, { 2, -2}, { 5, -5}, { 3, -5},
 	{ 4, -8}, { 2, -8}, { 3,-11}, { 1,-11}
 };
+
+const struct int8_2D bg_fill4[] = {
+	{0, -6}
+};
+
+const struct int8_2D bits_mask4[] = {
+	{-1,0}, {0,6}, {1,5}, {2,6}, {4,4}, {4,2}, {4,0}, {3,-1}, {3,-3}, {2,-4}, {2,-6}, {0,-8}
+};
+
+#define DEFAULT_LAYOUT4 {\
+	.bits = bits4,\
+	.bg_fill = bg_fill4,\
+	.bg_fill_len = 6,\
+	.bits_mask = bits_mask4,\
+	.bits_mask_len = 12,\
+	.is_bits_mask_mirrored = 1,\
+	.scale_div = 16,\
+	.rotate = 5\
+}
 
 // :34!0:24!1:25!2:15!3 :16@0:06@1:17@2:07@3 :26#0:35#1:27#2:36#3 :37$0:46$1:47$2:56$3 :08%0:18%1:28%2:38%3
 const struct int8_2D bits5[] = {
@@ -96,4 +164,23 @@ const struct int8_2D bits5[] = {
 	{-8,  2}, {-7,  5}, {-6,  8}, {-5, 11}
 };
 
-const struct int8_2D* default_layouts[] = {, layout2, layout3, layout4, layout5};
+const struct int8_2D bg_fill3[] = {
+	{0, -6}
+};
+
+const struct int8_2D bits_mask3[] = {
+	{-1,0}, {0,6}, {1,5}, {2,6}, {4,4}, {4,2}, {4,0}, {3,-1}, {3,-3}, {2,-4}, {2,-6}, {0,-8}
+};
+
+#define DEFAULT_LAYOUT5 {\
+	.bits = bits5,\
+	.bg_fill = bg_fill5,\
+	.bg_fill_len = 6,\
+	.bits_mask = bits_mask5,\
+	.bits_mask_len = 12,\
+	.is_bits_mask_mirrored = 1,\
+	.scale_div = 18,\
+	.rotate = 5\
+}
+
+const struct layout default_layouts[5] = {DEFAULT_LAYOUT1, DEFAULT_LAYOUT2, DEFAULT_LAYOUT3, DEFAULT_LAYOUT4, DEFAULT_LAYOUT5};
