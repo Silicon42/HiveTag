@@ -51,7 +51,7 @@ const struct int8_2D bits2[] = {
 };
 
 const struct int8_2D bg_fill2[] = {
-	{0, -6}
+	{-1,9},{5,3},{5,-3},{-1,-9},{-4,-6},{-4,6}
 };
 
 const struct int8_2D bits_mask2[] = {
@@ -86,7 +86,7 @@ const struct int8_2D bits3[] = {
 };
 
 const struct int8_2D bg_fill3[] = {
-	{7,-1},{1, -11},{-1, -11},{-7,-1},
+	{0,-12},{-6,-6},{-6,6},{0,12},{6,6},{6,-6}
 };
 
 const struct int8_2D bits_mask3[] = {
@@ -124,7 +124,7 @@ const struct int8_2D bits4[] = {
 };
 
 const struct int8_2D bg_fill4[] = {
-	{0, -6}
+	{0, -7},{0, 7}
 };
 
 const struct int8_2D bits_mask4[] = {
