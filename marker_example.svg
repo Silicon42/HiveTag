@@ -45,7 +45,7 @@ sincce it makes some hidden parts visible -->
 		allows for specifying coordinates precisely in the least possible characters.
 		would also have a rotation tacked on after for n=6 marker size-->
 		<polygon points="0,4 -3.4641016,-2 3.4641016,-2"/><!-- 3.46410162 = 2*sqrt(3) -->
-		<g mask="url(#E)" transform="scale(.692820323,.4)">
+		<g mask="url(#E)" transform="scale(.692820323,.4)"><!-- .692820323 = 4/10 * sqrt(3), .4 = 4/10 where 4 = r and 10 is scale_div-->
 			<!-- gap filler polygon that handles what would be black hairline gaps from
 			portions of the data region that go beyond the background of the alignment
 			triangle. Is dependent on the marker size but is not neccessary for cutter

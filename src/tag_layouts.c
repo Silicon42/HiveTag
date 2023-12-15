@@ -164,11 +164,11 @@ const struct int8_2D bits5[] = {
 	{-8,  2}, {-7,  5}, {-6,  8}, {-5, 11}
 };
 
-const struct int8_2D bg_fill3[] = {
+const struct int8_2D bg_fill5[] = {
 	{0, -6}
 };
 
-const struct int8_2D bits_mask3[] = {
+const struct int8_2D bits_mask5[] = {
 	{-1,0}, {0,6}, {1,5}, {2,6}, {4,4}, {4,2}, {4,0}, {3,-1}, {3,-3}, {2,-4}, {2,-6}, {0,-8}
 };
 
