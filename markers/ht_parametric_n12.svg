@@ -64,6 +64,7 @@ if(q_pos)	// if the query exists, it should only include the hex data
 		else
 			script.before(bit);
 	}
+	script.remove();
 }
 			//]]></script>
 		</g>
