@@ -61,7 +61,7 @@ void write_bits(FILE* marker_fp, gf16_poly codeword, const struct int8_2D* bits,
 	{
 		if(codeword & 1)
 		{
-			char x_str[8];
+			char x_str[10];
 			if(bits[bit].x)
 				sprintf(x_str, SVG_X_STR, bits[bit].x);
 			else
@@ -113,8 +113,8 @@ int main()
 		buf_pos += sprintf(buf_pos, SVG_ROTATION, lo.rotate);
 
 	char x_scale[12], y_scale[12];	// printf has no way to omit the leading 0 so print to a string first
-	sprintf(x_scale, "%.9g", SQRT_3*4.0/lo.scale_div);
-	sprintf(y_scale, "%.9g", 4.0/lo.scale_div);
+	sprintf(x_scale, "%.9f", SQRT_3*4.0/lo.scale_div);
+	sprintf(y_scale, "%.9f", 4.0/lo.scale_div);
 	buf_pos += sprintf(buf_pos, SVG_BITS_SCALE, x_scale + 1, y_scale + 1);
 	
 	buf_pos = write_polygon(buf_pos, lo.bg_fill, lo.bg_fill_len);
