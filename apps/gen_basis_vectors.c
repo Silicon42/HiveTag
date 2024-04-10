@@ -1,6 +1,6 @@
 // I don't know if "basis vector" is actually the technically correct term for these but each codeword is
 //  composed of linear combinations of a list for given n value of the code and uses the first 
-//  k - cieling(k/3) entries of that list for the rotation dependent portion and the polynomial product of
+//  k - ceiling(k/3) entries of that list for the rotation dependent portion and the polynomial product of
 //  the data and entry n/3 - cieling(k/3) in the rotation independent table
 
 // This program is the successor to rs_codeword_test in that I used what I learned by looking for patterns

@@ -1,3 +1,5 @@
+export TMP = ./
+CC = gcc
 MAKEFLAGS += --no-builtin-rules  #black magic removal
 # Note: 
 # If the .d (dependency) files are manually removed the dependencies for include files will not
