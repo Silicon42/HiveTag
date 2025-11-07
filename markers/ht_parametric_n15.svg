@@ -14,7 +14,7 @@
 			<!--polygon points="-3,3 0,-6 3,3"/-->
 			<script id="S">//<![CDATA[
 const href = document.defaultView.location.href;
-const q_pos = href.indexOf("?") + 1;
+const q_pos = href.indexOf("#") + 1;
 const script = document.getElementById("S");	// the id definitely exists
 
 const x = new Int8Array([
