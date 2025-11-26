@@ -1,21 +1,16 @@
 <svg viewBox="-4 -4 8 8" xmlns="http://www.w3.org/2000/svg">
 	<defs>
-		<polygon points="0,2 -1,1 -1,-1 0,-2 1,-1 1,1" id="1"/>
-		<ellipse id="0" rx="1.15470054" ry="2" fill="#FFF"/>
+		<path d="m-1-3v6l3-3" fill="#fff" id="0"/>
+		<path d="m0-2l1 1v2L0 2-1 1v-2" id="1"/>
 	</defs>
-	<mask id="E" fill="#FFF">
-		<polygon points="-1,0 0,6 1,5 2,6 4,4 4,2 4,0 3,-1 3,-3 2,-4 2,-6 0,-8" id="R"/>
-		<use href="#R" transform="scale(-1,1)"/>
-	</mask>
-	<mask id="M">
+	<mask id="m">
 		<circle r="4" fill="#FFF"/>
-		<polygon points="0,4 -3.46410162,-2 3.46410162,-2"/>
-		<g mask="url(#E)" transform="scale(.692820323,.4)">
-			<polygon points="-3,3 0,-6 3,3"/>
-			<script id="S">//<![CDATA[
+		<g transform="scale(.692820323,.4)">
+			<path d="m0-6l4 2-1 7-3 5-3-5-1-7"/>
+<script id="s">//<![CDATA[
 const href = document.defaultView.location.href;
 const q_pos = href.indexOf("#") + 1;
-const script = document.getElementById("S");	// the id definitely exists
+const script = document.getElementById("s");	// the id definitely exists
 
 const x = new Int8Array([
  0,-2,-1,-3,
@@ -30,12 +25,13 @@ const y = new Int8Array([
 
 if(q_pos)	// if the query exists, it should only include the hex data
 {
-	const hex = href.substring(q_pos);	// hexadecimal encoded string of bit states
+	const hex = href.substring(q_pos);	// hexadecimal symbol states
 	const bin = BigInt("0x" + hex);	//convert to binary
 	for(var i = 0; i < 12; ++i)
 	{
 		const bit = document.createElementNS("http://www.w3.org/2000/svg", "use");
 		const bool = Boolean((bin >> BigInt(i)) & 1n);
+		
 		bit.setAttribute("href", '#'+(+bool));
 		if(x[i])	// only set if it's non-zero
 			bit.setAttribute("x", x[i].toString());
@@ -48,8 +44,10 @@ if(q_pos)	// if the query exists, it should only include the hex data
 	}
 	script.remove();
 }
-			//]]></script>
+//]]></script>
+			<path d="m3-3v2l.5.5 1-3Q5-5 4-5h-2v1zM0 6l1-1 .5.5-1 3Q0 10-.5 8.5" id="l"/>
+			<use href="#l" transform="scale(-1 1)"/>
 		</g>
 	</mask>
-	<circle r="4" mask="url(#M)"/>
+	<circle r="4" mask="url(#m)"/>
 </svg>
