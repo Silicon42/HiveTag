@@ -4,7 +4,7 @@
 		<path d="m0-2l1 1v2L0 2-1 1v-2" id="1"/>
 	</defs>
 	<mask id="m">
-		<circle r="4" fill="#FFF"/>
+		<circle r="4" fill="#fff"/>
 		<g transform="scale(.692820323,.4)">
 			<path d="m0-6l4 2-1 7-3 5-3-5-1-7"/>
 <script id="s">//<![CDATA[
