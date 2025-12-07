@@ -1,59 +1,63 @@
-<svg viewBox="-1 -1 17 17" xmlns="http://www.w3.org/2000/svg">
-	<defs>
-		<path d="m-3-2v6l3-3" id="0" fill="#fff"/>
-		<path d="m-3 0v2l1 1 1-1v-2l-1-1" id="1"/>
-		<path d="m0-6l4 2-1 7-3 5-3-5-1-7" id="b"/>
-		<path d="m3-3v2l.5.5 1-3Q5-5 4-5h-2v1zM0 6l1-1 .5.5-1 3Q0 10-.5 8.5l-1-3 .5-.5zM-3-3v2l-.5.5-1-3Q-5-5-4-5h2v1" id="f"/>
-	</defs>
-	<mask id="m">
-		<circle r="999" fill="#fff"/>
-		<g transform="scale(.14285715)">
-			<use href="#b"/>
-			<use href="#f"/>
-		</g>
-		<g transform="translate(1,3)scale(.14285715)">
-			<use href="#b"/>
-			<use href="#f"/>
-		</g>
-	</mask>
-	<circle r="999" mask="url(#m)"/>
-<!--script id="s">//<![CDATA[
-const href = document.defaultView.location.href;
-const q_pos = href.indexOf("#") + 1;
-const script = document.getElementById("s");	// the id definitely exists
+<svg viewBox="-5 -5 101 125.5" xmlns="http://www.w3.org/2000/svg">
+<defs>
+	<ellipse rx="5.7735027" ry="10" id="c"/>
+	<path d="m-3-2v6l3-3" id="0"/>
+	<path d="m-3 0v2l1 1 1-1v-2l-1-1" id="1" fill="#fff"/>
+	<path d="m0-6l4 2-1 7-3 5-3-5-1-7" id="b" fill="#fff"/>
+	<path d="m3-3v2l.5.5 1-3Q5-5 4-5h-2v1zM0 6l1-1 .5.5-1 3Q0 10-.5 8.5l-1-3 .5-.5zM-3-3v2l-.5.5-1-3Q-5-5-4-5h2v1" id="f" fill="#fff"/>
+</defs>
+<g transform="scale(.8660254.5)">
+<g><use href="#c"/><use href="#b"/><use/><use href="#f"/></g><script id="s">//<![CDATA[
+const script = document.getElementById("s");
+const template = script.previousElementSibling;
 
-const x = new Int8Array([
+const rot = [0, 0x176, 0x2EC, 0x39A, 0x4FB, 0x58D];
+const x = [
  2, 0, 1,-1,
  4, 5, 3, 4,
  0, 1, 2, 3
-]);
-const y = new Int8Array([
+];
+const y = [
  3, 3, 0, 0,
 -3, 0, 0, 3,
 -3,-6,-3,-6
-]);
+];
 
-if(q_pos)	// if the query exists, it should only include the hex data
+for(var id1 = 0; id1 < 6; ++id1)
 {
-	const hex = href.substring(q_pos);	// hexadecimal symbol states
-	const bin = BigInt("0x" + hex);	//convert to binary
-	for(var i = 0; i < 12; ++i)
+	for(var id0 = 0; id0 < 16; ++id0)
 	{
-		const bit = document.createElementNS("http://www.w3.org/2000/svg", "use");
-		const bool = Boolean((bin >> BigInt(i)) & 1n);
-		
-		bit.setAttribute("href", '#'+(+bool));
-		if(x[i])	// only set if it's non-zero
-			bit.setAttribute("x", x[i].toString());
-		if(y[i])	// only set if it's non-zero
-			bit.setAttribute("y", y[i].toString());
+		var marker = template.cloneNode(true);
+		const bin = (id0 * 0x111) ^ rot[id1];	//binary bit pattern
+		if(bin)
+		{
+			marker.setAttribute("transform", "translate(" + (7 * id0) + ' ' + (21 * (2 * id1 + (id0 & 1))) + ')');
+		}
+		template.before(marker);
+		marker = marker.children[2];
 
-		if(bool)
-			script.after(bit);
-		else
-			script.before(bit);
+		for(var i = 0; i < 12; ++i)
+		{
+			const bit = document.createElementNS("http://www.w3.org/2000/svg", "use");
+			const bool = (bin >> i) & 1;
+			
+			bit.setAttribute("href", '#' + bool);
+			if(x[i])	// only set if it's non-zero
+				bit.setAttribute("x", x[i].toString());
+			if(y[i])	// only set if it's non-zero
+				bit.setAttribute("y", y[i].toString());
+
+			if(bool)
+				marker.after(bit);
+			else
+				marker.before(bit);
+		}
+		marker.remove();
 	}
-	script.remove();
 }
-//]]></script-->
+
+template.remove();
+script.remove();
+//]]></script>
+</g>
 </svg>
