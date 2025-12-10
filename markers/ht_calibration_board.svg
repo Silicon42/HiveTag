@@ -1,12 +1,13 @@
-<svg viewBox="-5 -5 101 125.5" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="-11 -12 204 255" width="8in" height="10in" xmlns="http://www.w3.org/2000/svg">
 <defs>
-	<ellipse rx="5.7735027" ry="10" id="c"/>
-	<path d="m-3-2v6l3-3" id="0"/>
-	<path d="m-3 0v2l1 1 1-1v-2l-1-1" id="1" fill="#fff"/>
-	<path d="m0-6l4 2-1 7-3 5-3-5-1-7" id="b" fill="#fff"/>
-	<path d="m3-3v2l.5.5 1-3Q5-5 4-5h-2v1zM0 6l1-1 .5.5-1 3Q0 10-.5 8.5l-1-3 .5-.5zM-3-3v2l-.5.5-1-3Q-5-5-4-5h2v1" id="f" fill="#fff"/>
+	<ellipse rx="5.7735027" ry="10" id="c" fill="#fff"/>
+	<path d="m-3-2v6l3-3" id="0" fill="#fff"/>
+	<path d="m-3 0v2l1 1 1-1v-2l-1-1" id="1"/>
+	<path d="m0-6l4 2-1 7-3 5-3-5-1-7" id="b"/>
+	<path d="m3-3v2l.5.5 1-3Q5-5 4-5h-2v1zM0 6l1-1 .5.5-1 3Q0 10-.5 8.5l-1-3 .5-.5zM-3-3v2l-.5.5-1-3Q-5-5-4-5h2v1" id="f"/>
 </defs>
-<g transform="scale(.8660254.5)">
+<mask id="m">
+<g transform="scale(1.7320508 1)">
 <g><use href="#c"/><use href="#b"/><use/><use href="#f"/></g><script id="s">//<![CDATA[
 const script = document.getElementById("s");
 const template = script.previousElementSibling;
@@ -60,4 +61,6 @@ template.remove();
 script.remove();
 //]]></script>
 </g>
+</mask>
+<circle r="999" mask="url(#m)"/>
 </svg>
